@@ -4,14 +4,18 @@
 #include <math.h>
 
 
-double customPow(double number, int power) {
+double recPow(double number, int power) {
     if (power == 0) {
         return 1;
     } else if (power > 0) {
-        return number * customPow(number, power - 1);
+        return number * recPow(number, power - 1);
     } else if (power < 0) {
-        return (1 / number) * customPow(number, power + 1);
+        return (1 / number) * recPow(number, power + 1);
     }
+}
+
+double pow(double number, double power) {
+    return exp(log(number) * power);
 }
 
 double avgGeom(int count, ...) {
@@ -26,6 +30,6 @@ double avgGeom(int count, ...) {
 
 int main(int argc, char *argv[]) {
     printf("%f\n", avgGeom(3, 2.0, 4.0, 8.0));
-    printf("%f\n%f\n", customPow(5, 3), customPow(5, -2));
+    printf("%f\n%f\n", recPow(5, 3), recPow(5, -2));
     return 0;
 }
