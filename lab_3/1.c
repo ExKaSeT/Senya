@@ -51,6 +51,15 @@ int division(int dividend, int divisor, int origdiv, int *remainder) {
 }
 
 short toBinary(char *result, int resLen, int num, int r) {
+    if (resLen < 2) {
+        return 1;
+    }
+    if (num < 0) {
+        return 2;
+    }
+    if (r < 1) {
+        return 1;
+    }
     for (int x = 0; x < resLen; x = add(x, 1)) {
         result[x] = '0';
     }
@@ -74,9 +83,20 @@ short toBinary(char *result, int resLen, int num, int r) {
 
 int main() {
     char res[10];
-    if (toBinary(res, 10, 3333, 3)) {
-        printf("Too small array\n");
-        return 1;
+    int code = toBinary(res, 10, 3333, 3);
+    switch (code) {
+        case 1: {
+            printf("Too small array\n");
+            return 1;
+        }
+        case 2: {
+            printf("Num must be positive\n");
+            return 1;
+        }
+        case 3: {
+            printf("'r' must be > 0\n");
+            return 1;
+        }
     }
     printf("%s\n", res);
     return 0;
