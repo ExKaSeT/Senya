@@ -73,40 +73,23 @@ short genFilename(char **result, char *extension) {
     return 1;
 }
 
-short parseTmp(FILE *file, char **filename, int *id) {
-    int strLen;
-    if (fscanf(file, "%d", &strLen) != 1) {
-        return 2;
-    }
-    char *name = (char *) malloc(sizeof(char) * (strLen + 1));
-    if (name == NULL) {
-        return 1;
-    }
-    if (fscanf(file, "%d\t%s", id, name) != 2) {
-        return 2;
-    }
-    *filename = name;
-    return 0;
-}
-
-short isCorrectMessage(const char *message) {
-    if (message[0] == '\0')
-        return 0;
-    short findEnd = 0;
-    for (int x = 0; x < 100; x++) {
-        if (message[x] == '\0') {
-            findEnd = 1;
-            break;
-        } else if (!(
-                ('A' <= message[x] && message[x] <= 'Z') ||
-                ('a' <= message[x] && message[x] <= 'z') ||
-                ('0' <= message[x] && message[x] <= '9')
-        )) {
-            return 0;
+short getMessage(char *res, int resCapacity) {
+    char c;
+    int count = 0;
+    while ((c = getchar()) != '\n') {
+        if (count == resCapacity - 1) {
+            return 1;
         }
+        if (!(
+                ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') ||
+                ('0' <= c && c <= '9') || (c == ' ')
+        )) {
+            return 2;
+        }
+        res[count] = c;
+        count++;
     }
-    if (findEnd)
-        return 1;
+    res[count] = '\0';
     return 0;
 }
 
@@ -176,6 +159,7 @@ short loadMessages(List **result, FILE *in, int count) {
 }
 
 void printList(List *mes) {
+    printf("\n\n");
     for (int x = 0; x < mes->size; x++) {
         printf("ID: %d\n", mes->data[x]->id);
         printf("LEN: %d\n", mes->data[x]->size);
@@ -186,67 +170,47 @@ void printList(List *mes) {
 int main(int argc, char *argv[]) {
     if (argc > 2)
         return 69;
-    FILE *tmp, *data;
-    int id = 0;
-    char *filename;
-    if ((tmp = fopen("tmp", "r")) == NULL) {
-        if (!genFilename(&filename, ".csv")) {
-            fclose(tmp);
-            return 1;
-        }
-    } else {
-        switch (parseTmp(tmp, &filename, &id)) {
-            case 1:
-                return 1;
-            case 2:
-                return 2;
-        }
-    }
-    fclose(tmp);
 
-    char *message;
-    if (argc == 1) {
-        char mes[100];
-        printf("Enter message:\n");
-        scanf("%s", mes);
-        message = mes;
-    } else {
-        message = argv[1];
+    FILE *data;
+    char *filename;
+    int id = 0;
+
+    if (!genFilename(&filename, ".csv")) {
+        return 1;
     }
-    if (!isCorrectMessage(message)) {
-        free(filename);
-        return 5;
-    }
-    id++;
-    if ((tmp = fopen("tmp", "w")) == NULL) {
-        free(filename);
-        return 6;
-    }
-    fprintf(tmp, "%d\n%d\t%s", (int) strlen(filename), id, filename);
-    fclose(tmp);
-    if ((data = fopen(filename, "a+b")) == NULL) {
+    if ((data = fopen(filename, "wb")) == NULL) {
         free(filename);
         return 3;
     }
-    writeMessage(data, message, id);
-    fclose(data);
-    if (argc == 2) {
-        if ((data = fopen(filename, "rb")) == NULL) {
-            free(filename);
-            return 3;
+
+    char message[100];
+
+    while (1) {
+        printf("Enter message %d\n", id + 1);
+        switch (getMessage(message, 100)) {
+            case 1: free(filename); fclose(data); return 4;
+            case 2: free(filename); fclose(data); return 5;
         }
-        free(filename);
-        List *messages;
-        switch (loadMessages(&messages, data, id)) {
-            case 1: fclose(data); return 9;
-            case 2: fclose(data); return 10;
-            case 3: fclose(data); return 11;
-        }
-        printList(messages);
-        destroyList(messages);
-        fclose(data);
-    } else {
-        free(filename);
+        if (strcmp(message, argv[1]) == 0)
+            break;
+        writeMessage(data, message, id);
+        id++;
     }
+    fclose(data);
+
+    if ((data = fopen(filename, "rb")) == NULL) {
+        free(filename);
+        return 3;
+    }
+    free(filename);
+    List *messages;
+    switch (loadMessages(&messages, data, id)) {
+        case 1: fclose(data); return 9;
+        case 2: fclose(data); return 10;
+        case 3: fclose(data); return 11;
+    }
+    printList(messages);
+    destroyList(messages);
+    fclose(data);
     return 0;
 }
