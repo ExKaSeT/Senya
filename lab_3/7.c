@@ -341,61 +341,34 @@ short readPerson(FILE *file, Person **result) {
     char *lastname, *name, *patronymic, *date, *sexString, *salaryString;
     double salary;
     Sex sex;
-    switch (readString(file, &lastname, "\t \n", isLetter)) {
-        case 1:
-            return 1;
-        case 2:
-            return 2;
-        case 3:
-            return 3;
+    short statusCode;
+    statusCode = readString(file, &lastname, "\t \n", isLetter);
+    if (statusCode != 0) {
+        return statusCode;
     }
-    switch (readString(file, &name, "\t \n", isLetter)) {
-        case 1:
-            free(lastname);
-            return 1;
-        case 2:
-            free(lastname);
-            return 2;
-        case 3:
-            free(lastname);
-            return 3;
+    statusCode = readString(file, &name, "\t \n", isLetter);
+    if (statusCode != 0) {
+        free(lastname);
+        return statusCode;
     }
-    switch (readString(file, &patronymic, "\t \n", isLetter)) {
-        case 1:
-            freeAll(2, lastname, name);
-            return 1;
-        case 2:
-            freeAll(2, lastname, name);
-            return 2;
-        case 3:
-            freeAll(2, lastname, name);
-            return 3;
+    statusCode = readString(file, &patronymic, "\t \n", isLetter);
+    if (statusCode != 0) {
+        freeAll(2, lastname, name);
+        return statusCode;
     }
-    switch (readString(file, &date, "\t \n", isNumOrDot)) {
-        case 1:
-            freeAll(3, lastname, name, patronymic);
-            return 1;
-        case 2:
-            freeAll(3, lastname, name, patronymic);
-            return 2;
-        case 3:
-            freeAll(3, lastname, name, patronymic);
-            return 3;
+    statusCode = readString(file, &date, "\t \n", isNumOrDot);
+    if (statusCode != 0) {
+        freeAll(3, lastname, name, patronymic);
+        return statusCode;
     }
     if (!isCorrectDate(date)) {
         freeAll(4, lastname, name, patronymic, date);
         return 4;
     }
-    switch (readString(file, &sexString, "\t \n", isLetter)) {
-        case 1:
-            freeAll(4, lastname, name, patronymic, date);
-            return 1;
-        case 2:
-            freeAll(4, lastname, name, patronymic, date);
-            return 2;
-        case 3:
-            freeAll(4, lastname, name, patronymic, date);
-            return 3;
+    statusCode = readString(file, &sexString, "\t \n", isLetter);
+    if (statusCode != 0) {
+        freeAll(4, lastname, name, patronymic, date);
+        return statusCode;
     }
     switch (isCorrectSex(sexString)) {
         case 0:
@@ -408,19 +381,14 @@ short readPerson(FILE *file, Person **result) {
             sex = female;
             break;
     }
-    switch (readString(file, &salaryString, "\t \n", isNumOrDot)) {
-        case -1:
+    statusCode = readString(file, &salaryString, "\t \n", isNumOrDot);
+    if (statusCode != 0) {
+        if (statusCode == -1) { // EOF
             isLastPerson = 1;
-            break;
-        case 1:
+        } else {
             freeAll(5, lastname, name, patronymic, date, sexString);
-            return 1;
-        case 2:
-            freeAll(5, lastname, name, patronymic, date, sexString);
-            return 2;
-        case 3:
-            freeAll(5, lastname, name, patronymic, date, sexString);
-            return 3;
+            return statusCode;
+        }
     }
     if (!isCorrectDouble(salaryString, &salary)) {
         freeAll(6, lastname, name, patronymic, date, sexString, salaryString);
@@ -475,28 +443,9 @@ short readPersonsSorted(FILE *file, List **result, short (*compareTo)(Person *, 
         return 10;
     while (statusCode != -1) { // -1 = EOF
         statusCode = readPerson(file, &person);
-        switch (statusCode) {
-            case 1:
-                listDestroy(list);
-                return 1;
-            case 2:
-                listDestroy(list);
-                return 2;
-            case 3:
-                listDestroy(list);
-                return 3;
-            case 4:
-                listDestroy(list);
-                return 4;
-            case 5:
-                listDestroy(list);
-                return 5;
-            case 6:
-                listDestroy(list);
-                return 6;
-            case 7:
-                listDestroy(list);
-                return 7;
+        if (statusCode != 0 && statusCode != -1) {
+            listDestroy(list);
+            return statusCode;
         }
         if (list->size == 0) {
             switch (listInsert(list, 0, person)) {
