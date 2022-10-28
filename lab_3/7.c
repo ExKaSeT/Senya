@@ -583,6 +583,7 @@ int main(int argc, char *argv[]) {
             return 69;
     }
 
+    listDestroy(list);
     fclose(data);
     return 0;
 }
