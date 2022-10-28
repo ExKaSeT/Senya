@@ -124,7 +124,7 @@ void listDestroy(List *list) {
             listRemoveNode(node);
             node = next;
         }
-        listRemoveNode(next);
+        listRemoveNode(node);
     }
     free(list);
 }
