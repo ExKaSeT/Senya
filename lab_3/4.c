@@ -42,8 +42,11 @@ void destroyList(List *list) {
 
 List *createList() {
     List *list = (List *) malloc(sizeof(List));
+    if (list == NULL)
+        return NULL;
     ListType *data = (ListType *) malloc(sizeof(ListType) * 5);
-    if (list == NULL || data == NULL) {
+    if (data == NULL) {
+        free(list);
         return NULL;
     }
     list->size = 0;
