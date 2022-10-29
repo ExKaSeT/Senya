@@ -200,14 +200,14 @@ short readStudents(FILE *file, Student ***result, int *len) {
     int resCapacity = 1;
     Student *student;
 
-    Student **res = (Student **) malloc(sizeof(Student) * resCapacity);
+    Student **res = (Student **) malloc(sizeof(Student *) * resCapacity);
     if (res == NULL)
         return 10;
 
     while (statusCode != -1) { // -1 = EOF
         if (count == resCapacity) {
             resCapacity *= 2;
-            Student **newRes = (Student **) realloc(res, sizeof(Student) * resCapacity);
+            Student **newRes = (Student **) realloc(res, sizeof(Student *) * resCapacity);
             if (newRes == NULL) {
                 killStudents(res, count);
                 return 11;
@@ -224,7 +224,7 @@ short readStudents(FILE *file, Student ***result, int *len) {
         count++;
     }
     if (resCapacity != count) {
-        Student **newRes = (Student **) realloc(res, sizeof(Student) * count);
+        Student **newRes = (Student **) realloc(res, sizeof(Student *) * count);
         if (newRes == NULL) {
             killStudents(res, count);
             return 11;
