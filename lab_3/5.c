@@ -101,6 +101,7 @@ int parseInt(const char *string) { // correct number in str
     x++;
     while (string[x] != '\0') {
         num = num * 10 + (string[x] - '0');
+        x++;
     }
     return num;
 }
