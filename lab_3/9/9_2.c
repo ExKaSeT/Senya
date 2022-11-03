@@ -256,6 +256,13 @@ int readData(char **filenames, int count, Heap *heap) {
             }
             int priority = parseInt(string);
             free(string);
+            if (priority < 0 || priority > 10) {
+                for (int y = 0; y < count; y++) {
+                    fclose(files[y]);
+                }
+                free(files);
+                return 7;
+            }
             statusCode = readString(files[x], &string, "'", NULL);
             if (statusCode != 0) {
                 for (int y = 0; y < count; y++) {
