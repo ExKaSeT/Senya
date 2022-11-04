@@ -1,0 +1,3 @@
+5 Sergey Nikulin 25410
+10 Ilya Irbitsky 999999
+15 Ivan Krilov 777.777
