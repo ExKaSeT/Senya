@@ -1,0 +1,2 @@
+A(B(E(G,T,R(W,Z))),C(F(L,M)))
+A(B(E(G(W,Z),N,I,G)),C(F(E,R,L,M)),D(K,E,K))
