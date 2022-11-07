@@ -1,0 +1,26 @@
+A(B(E(G,T,R(W,Z))),C(F(L,M)))
+
+          A          
+       /         \   
+      B           C  
+      |           |  
+      E           F  
+ /  |    \       / \ 
+G   T     R     L   M
+         / \         
+        W   Z        
+                     
+A(B(C(F,G,M),D(N,L(S,X(H,Q),Y,U),O),E(P,K,V)))
+
+                        A                        
+                        |                        
+                        B                        
+     /                  |                  \     
+    C                   D                   E    
+ /  |  \     /          |          \     /  |  \ 
+F   G   M   N           L           O   P   K   V
+                 /    |     |  \                 
+                S     X     Y   U                
+                     / \                         
+                    H   Q                        
+                                                 
