@@ -13,6 +13,7 @@ struct Node {
 
 typedef struct {
     Node *first;
+    Node *last;
     int size;
 } List;
 
@@ -23,6 +24,7 @@ int listCreate(List **get) {
     }
     list->size = 0;
     list->first = NULL;
+    list->last = NULL;
     *get = list;
     return 0;
 }
@@ -37,17 +39,15 @@ int listInsert(List *list, int index, ListType *data) {
     newNode->data = data;
     if (list->size == 0) { // 0 элементов
         list->first = newNode;
+        list->last = newNode;
         newNode->next = NULL;
     } else if (index == 0) { // вставка в начало
         newNode->next = list->first;
         list->first = newNode;
     } else if (index == -1 || index == list->size) { // вставка в конец
-        Node *node = list->first;
-        while (node->next != NULL) {
-            node = node->next;
-        }
-        node->next = newNode;
+        list->last->next = newNode;
         newNode->next = NULL;
+        list->last = newNode;
     } else {
         Node *node = list->first;
         for (int x = 1; x < index; x++) {
