@@ -86,19 +86,23 @@ int getId(int *id, unsigned int *serverId) {
 }
 
 int getResultId(int *result, unsigned int timeout, int id) {
-    HANDLE connectMapFile;
+    HANDLE connectMapFile = NULL;
     LPCTSTR connectPBuf;
     char name[15];
     sprintf(name, "client%d", id);
-    connectMapFile = OpenFileMapping(
-            FILE_MAP_ALL_ACCESS,   // read/write access
-            FALSE,                 // do not inherit the name
-            name);               // name of mapping object
 
+    while (timeout && connectMapFile == NULL) {
+        connectMapFile = OpenFileMapping(
+                FILE_MAP_ALL_ACCESS,   // read/write access
+                FALSE,                 // do not inherit the name
+                name);               // name of mapping object
+
+        sleep(1);
+        timeout--;
+    }
     if (connectMapFile == NULL) {
         return 3;
     }
-
     connectPBuf = (LPTSTR) MapViewOfFile(connectMapFile, // handle to map object
                                          FILE_MAP_ALL_ACCESS,  // read/write permission
                                          0,
@@ -107,7 +111,7 @@ int getResultId(int *result, unsigned int timeout, int id) {
 
     if (connectPBuf == NULL) {
         CloseHandle(connectMapFile);
-        return 3;
+        return 4;
     }
 
     int data = 0;
@@ -205,7 +209,7 @@ int main(int argc, char *argv[]) {
 //    if (argc != 2)
 //        return 69;
 
-    int id;
+    int id = 0;
     unsigned int serverId;
     int statusCode = getId(&id, &serverId);
     if (statusCode != 0) {
@@ -312,23 +316,29 @@ int main(int argc, char *argv[]) {
     fclose(data);
 
     int result;
-    statusCode = getResultId(&result, 10, id);
+    statusCode = getResultId(&result, 20, id);
     if (statusCode != 0) {
+        printf("kek");
+        getchar();
         return statusCode;
     }
 
     switch (result) {
         case 1:
             printf("Good work\n");
+            break;
         case 2:
             printf("Incorrect actions\n");
+            break;
         case 3:
             printf("Goat annihilated\n");
+            break;
         case 4:
             printf("Cabbage annihilated\n");
+            break;
         case 10:
             printf("Triple annihilated\n");
     }
-
+    getchar();
     return 0;
 }
