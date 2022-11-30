@@ -1,0 +1,17 @@
+take goat;
+move;
+put;
+move;
+take cabbage;
+move;
+put;
+take goat;
+move;
+put;
+take wolf;
+move;
+put;
+move;
+take goat;
+move;
+put;
