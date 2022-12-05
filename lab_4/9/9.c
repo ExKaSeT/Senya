@@ -64,9 +64,9 @@ void listDestroy(List *list) {
         return;
     if (list->len) {
         for (int x = 0; x < list->len; x++) {
+            free(list->array[x]->defName);
+            free(list->array[x]->value);
             free(list->array[x]);
-//            free(list->array[x].defName);
-//            free(list->array[x].value);
         }
     }
     free(list->array);
