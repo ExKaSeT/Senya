@@ -122,8 +122,10 @@ int main(int argc, char* argv[]) {
         printf("Can't open the file\n");
         return 0;
     }
-    char prefix[] = "out_";
-    char* filename = strcat(prefix, argv[2]);
+    char filename[strlen(argv[2]) + 5];
+    filename[0] = '\0';
+    strcat(filename, "out_");
+    strcat(filename, argv[2]);
 
     if (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "/d") == 0) {
         if (argc != 3) {
