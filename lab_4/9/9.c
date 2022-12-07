@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
 
 
 typedef struct {
@@ -193,17 +194,16 @@ int hashMapRehashing(HashMap *hashMap) {
 }
 
 int hashMapCheckAndRehash(HashMap *hashMap) {
-    int minLen = hashMap->lists[0]->len;
-    int maxLen = minLen;
-    for (int x = 1; x < hashMap->size; x++) {
+    int minLen = INT_MAX;
+    int maxLen = 0;
+    for (int x = 0; x < hashMap->size; x++) {
         int len = hashMap->lists[x]->len;
         if (len == 0)
             continue;
-        if (len < minLen) {
-            minLen = len;
-        } else if (len > maxLen) {
+        if (len > maxLen)
             maxLen = len;
-        }
+        if (len < minLen)
+            minLen = len;
     }
     int statusCode;
     if ((double) maxLen / minLen > 2) {
