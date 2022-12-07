@@ -52,7 +52,7 @@ long double piLim(int n) {
     int tmp = n;
     long double res = 1;
     while (tmp) {
-        res *= 4.0 * tmp * tmp / (2 * tmp) / (2 * tmp - 1);
+        res *= (double) tmp / (tmp - 0.5);
         tmp--;
     }
     res /= sqrt(n);
@@ -158,10 +158,12 @@ void simpleNumsGenerate(long **simpleNums, unsigned long long toGenerate, unsign
     }
     if ((*simpleNums == NULL || (*generated) == 0)) {
         if (!((*simpleNums) = (long *) calloc(count, sizeof(long)))) {
+            free(arraySieve);
             return;
         }
     } else {
         if (!(tmp = (long *) realloc((*simpleNums), sizeof(long) * (count + (*generated))))) {
+            free(arraySieve);
             free(*simpleNums);
             return;
         }
@@ -181,7 +183,6 @@ double eulerEquation(double eps) {
     int step = 1.0 / eps / 100;
     long *simpleNums = NULL;
     unsigned long long t = 1.0 / eps / eps, generated = 0, i;
-    eps /= 1000;
     for (t; fabs(result - prevResult) > eps; t += step) {
         prevResult = result;
         result = 1;
