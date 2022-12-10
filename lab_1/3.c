@@ -122,11 +122,20 @@ int main(int argc, char* argv[]) {
         printf("Can't open the file\n");
         return 0;
     }
+    int slashIndex = 0;
+    for (int x = strlen(argv[2]) - 1; x >= 0; x--) { 
+        if (argv[2][x] == '/' || argv[2][x] == '\\') { 
+            slashIndex = x; 
+            break; 
+        } 
+    }
     char filename[strlen(argv[2]) + 5];
-    filename[0] = '\0';
-    strcat(filename, "out_");
-    strcat(filename, argv[2]);
-
+    if (slashIndex) { 
+        strncat(filename, argv[2], slashIndex + 1); 
+    } 
+    strcat(filename, "out_"); 
+    strcat(filename, argv[2] + slashIndex + (slashIndex == 0 ? 0 : 1));
+    
     if (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "/d") == 0) {
         if (argc != 3) {
             printf("Enter only path with flag '-d'\n");
