@@ -8,6 +8,7 @@
 typedef struct {
     char *defName;
     char *value;
+    unsigned hash;
 } Item;
 
 typedef struct {
@@ -37,7 +38,7 @@ int listCreate(List **list) {
     return 0;
 }
 
-int listAdd(List *list, char *defName, char *value) {
+int listAdd(List *list, char *defName, char *value, unsigned hash) {
     if (list == NULL) {
         return 2;
     }
@@ -55,6 +56,7 @@ int listAdd(List *list, char *defName, char *value) {
         return 1;
     newItem->defName = defName;
     newItem->value = value;
+    newItem->hash = hash;
     list->array[list->len] = newItem;
     list->len++;
     return 0;
@@ -132,21 +134,30 @@ int toDecimal(char c) {
         return c - 'a' + 36;
 }
 
-int hashMapGetHash(HashMap *hashMap, char *key) {
-    int divisor = hashMap->size;
-    unsigned long long num = 0;
-    unsigned long long curPow = 1;
+unsigned hashMapGetHash(char *key) {
+    unsigned num = 0;
+    unsigned curPow = 1;
     for (int x = strlen(key) - 1; x >= 0; x--) {
-        num = (num + toDecimal(key[x]) * curPow) % divisor;
-        curPow = (curPow * 62) % divisor;
+        num += toDecimal(key[x]) * curPow;
+        curPow = curPow * 62;
     }
-    return num % divisor;
+    return num;
 }
 
-Item *hashMapGet(HashMap *hashMap, char *key) {
+unsigned hashMapGetIndex(unsigned hashMapSize, char *key, unsigned *hash) {
+    if (hash != NULL)
+        return *hash % hashMapSize;
+    return hashMapGetHash(key) % hashMapSize;
+}
+
+Item *hashMapGet(HashMap *hashMap, char *key, unsigned *hash) {
     if (hashMap == NULL || key == NULL)
         return NULL;
-    List *list = hashMap->lists[hashMapGetHash(hashMap, key)];
+    List *list;
+    if (hash == NULL)
+        list = hashMap->lists[hashMapGetIndex(hashMap->size, key, NULL)];
+    else
+        list = hashMap->lists[hashMapGetIndex(hashMap->size, NULL, hash)];
     for (int x = 0; x < list->len; x++) {
         if (strcmp(key, list->array[x]->defName) == 0)
             return list->array[x];
@@ -154,11 +165,17 @@ Item *hashMapGet(HashMap *hashMap, char *key) {
     return NULL;
 }
 
-int hashMapPut(HashMap *hashMap, char *key, char *value) {
-    if (hashMapGet(hashMap, key) != NULL)
+int hashMapPut(HashMap *hashMap, char *key, char *value, unsigned *hash) {
+    if (hashMapGet(hashMap, key, hash) != NULL)
         return 2;
-    int hash = hashMapGetHash(hashMap, key);
-    int statusCode = listAdd(hashMap->lists[hash], key, value);
+    unsigned hashChecked = hash == NULL ? hashMapGetHash(key) : *hash;
+    int statusCode;
+    if (hash == NULL) {
+        unsigned newHash = hashMapGetHash(key);
+        statusCode = listAdd(hashMap->lists[hashMapGetIndex(hashMap->size, NULL, &newHash)], key, value, newHash);
+    } else {
+        statusCode = listAdd(hashMap->lists[hashMapGetIndex(hashMap->size, NULL, hash)], key, value, *hash);
+    }
     if (statusCode != 0) {
         return statusCode;
     }
@@ -175,7 +192,7 @@ int hashMapRehashing(HashMap *hashMap) {
         List *list = hashMap->lists[x];
         if (list->len != 0) {
             for (int y = 0; y < list->len; y++) {
-                statusCode = hashMapPut(newMap, list->array[y]->defName, list->array[y]->value);
+                statusCode = hashMapPut(newMap, list->array[y]->defName, list->array[y]->value, &(list->array[y]->hash));
                 if (statusCode != 0) {
                     hashMapDestroy(newMap);
                     return statusCode;
@@ -317,7 +334,7 @@ int readDirectives(HashMap **result, FILE *data) {
             free(defName);
             return statusCode;
         }
-        statusCode = hashMapPut(map, defName, value);
+        statusCode = hashMapPut(map, defName, value, NULL);
         if (statusCode != 0) {
             hashMapDestroy(map);
             free(defName);
@@ -364,7 +381,7 @@ int replaceDirectives(HashMap *directives, FILE *data) {
                 char tmp = string[end];
                 string[end] = '\0';
 //                printf("%s| %d %d\n", startPtr, start, end);
-                Item *item = hashMapGet(directives, startPtr);
+                Item *item = hashMapGet(directives, startPtr, NULL);
                 if (item != NULL) {
                     for (int x = 0; x < start; x++) {
                         putc(string[x], out);
