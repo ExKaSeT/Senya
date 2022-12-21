@@ -19,6 +19,9 @@ int genMatrix(float ***matrix, int strs, int cols) {
     int i, j, number;
     for (i = 0; i < strs; i++) {
         if (!((*matrix)[i] = (float *) malloc(sizeof(float) * cols))) {
+            for (int x = 0; x < i; x++) {
+                free((*matrix)[x]);
+            }
             free((*matrix));
             return 1;
         }
@@ -43,6 +46,10 @@ int multMatrixes(float **matrix1, float **matrix2, float ***result,
     (*resultCol) = col2;
     for (i = 0; i < str1; i++) {
         if (!((*result)[i] = (float *) malloc(sizeof(float) * (*resultCol)))) {
+            for (int x = 0; x < i; x++) {
+                free((*result)[x]);
+            }
+            free(*result);
             return 1;
         }
         for (j = 0; j < col2; j++) {

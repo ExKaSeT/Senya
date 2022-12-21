@@ -13,12 +13,16 @@ int separator(int sep) {
 
 char *strInit(int size) {
     char *buf = (char *) malloc(sizeof(char) * size);
+    if (buf == NULL)
+        return NULL;
     memset(buf, 0, size);
     return buf;
 }
 
 char *strRealloc(char *from, int currSize) {
     char *res = strInit(currSize);
+    if (res == NULL)
+        return NULL;
     strcpy(res, from);
     free(from);
     return res;
@@ -43,11 +47,19 @@ int main(int argc, char *argv[]) {
     }
     int base = 2, c, _c = 0, sized = 0, sizedCurr = 16, num;
     char *buff = strInit(sizedCurr);
+    char *buffTmp;
+    if (buff == NULL)
+        return 1;
     while ((c = fgetc(in)) != EOF) {
         if (isalnum(c)) {
             if (sized == sizedCurr - 2) {
                 buff[sized] = '\0';
-                buff = strRealloc(buff, sizedCurr *= 2);
+                buffTmp = strRealloc(buff, sizedCurr *= 2);
+                if (buffTmp == NULL) {
+                    free(buff);
+                    return 1;
+                }
+                buff = buffTmp;
             }
             if (isdigit(c)) {
                 if (base < c - '0') {
@@ -62,7 +74,12 @@ int main(int argc, char *argv[]) {
         } else if (isalnum(_c) && separator(c)) {
             if (sized == sizedCurr - 2) {
                 buff[sized] = '\0';
-                buff = strRealloc(buff, sizedCurr + 1);
+                buffTmp = strRealloc(buff, sizedCurr + 1);
+                if (buffTmp == NULL) {
+                    free(buff);
+                    return 1;
+                }
+                buff = buffTmp;
             }
             buff[sized] = '\0';
             num = reversedToI(buff, base, sized);
@@ -72,6 +89,8 @@ int main(int argc, char *argv[]) {
             sizedCurr = 16;
             sized = 0;
             buff = strInit(sizedCurr);
+            if (buff == NULL)
+                return 1;
         }
         _c = c;
     }
