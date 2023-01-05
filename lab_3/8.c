@@ -678,6 +678,10 @@ int bstLoadFromFile(BstNode **result, char *filename) {
             *ptr = c;
             ptr++;
         }
+        if (stringLen == 0) {
+            free(string);
+            string = NULL;
+        }
         if (bst == NULL) {
             int statusCode = bstCreate(&bst, key, string);
             if (statusCode != 0) {
