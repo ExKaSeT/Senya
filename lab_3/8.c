@@ -73,7 +73,7 @@ void bstInsertNode(BstNode *root, BstNode *node) {
     }
 }
 
-int bstInsert(BstNode *root, int key, char *string) {
+int bstInsert(BstNode *root, int key, char *string, BstNode **result) {
 //    char *str = (char *) malloc(sizeof(char) * 20);
 //    strcpy(str, string);
 //    string = str;
@@ -84,6 +84,8 @@ int bstInsert(BstNode *root, int key, char *string) {
     node->key = key;
     node->string = string;
     bstInsertNode(root, node);
+    if (result != NULL)
+        *result = node;
     return 0;
 }
 
@@ -100,8 +102,43 @@ int bstCreate(BstNode **result, int key, char *string) {
     return 0;
 }
 
-void bstDeleteNode(BstNode *node) {
-    BstNode *p = node->parent;
+void bstExcludeNode(BstNode **bstRoot, BstNode **exclude) {
+    BstNode *node = *exclude;
+    if (*bstRoot == *exclude) {
+        if (node->left == NULL && node->right == NULL) {
+            return;
+        } else if (node->left == NULL || node->right == NULL) {
+            if (node->left == NULL) {
+                *bstRoot = node->right;
+            } else {
+                *bstRoot = node->left;
+            }
+            (*bstRoot)->parent = NULL;
+        } else {
+            BstNode *successor = bstNext(node);
+            int keyTmp = node->key;
+            char *stringTmp = node->string;
+            node->key = successor->key;
+            node->string = successor->string;
+            if (successor->parent->left == successor) {
+                successor->parent->left = successor->right;
+                if (successor->right != NULL)
+                    successor->right->parent = successor->parent;
+            } else {
+                successor->parent->right = successor->right;
+                if (successor->right != NULL)
+                    successor->right->parent = successor->parent;
+            }
+            successor->left = node->left;
+            successor->right = node->right;
+            successor->parent = node->parent;
+            successor->key = keyTmp;
+            successor->string = stringTmp;
+            *exclude = successor;
+        }
+        return;
+    }
+    BstNode *p = (*exclude)->parent;
     if (node->left == NULL && node->right == NULL) {
         if (p->left == node)
             p->left = NULL;
@@ -123,7 +160,10 @@ void bstDeleteNode(BstNode *node) {
         }
     } else {
         BstNode *successor = bstNext(node);
+        int keyTmp = node->key;
+        char *stringTmp = node->string;
         node->key = successor->key;
+        node->string = successor->string;
         if (successor->parent->left == successor) {
             successor->parent->left = successor->right;
             if (successor->right != NULL)
@@ -133,18 +173,35 @@ void bstDeleteNode(BstNode *node) {
             if (successor->right != NULL)
                 successor->right->parent = successor->parent;
         }
+        successor->left = node->left;
+        successor->right = node->right;
+        successor->parent = node->parent;
+        successor->key = keyTmp;
+        successor->string = stringTmp;
+        *exclude = successor;
     }
+}
+
+void bstDestroy(BstNode *root) {
+    if (root == NULL)
+        return;
+    if (root->left != NULL)
+        bstDestroy(root->left);
+    if (root->right != NULL)
+        bstDestroy(root->right);
+    free(root->string);
+    free(root);
 }
 
 void findWordCountRec(BstNode *root, char *string, int *count) {
     if (*count != 0)
         return;
     if (root != NULL) {
-        findWordCountRec(root->left, string, count);
         if (strcmp(string, root->string) == 0) {
             *count = root->key;
             return;
         }
+        findWordCountRec(root->left, string, count);
         findWordCountRec(root->right, string, count);
     }
 }
@@ -167,11 +224,11 @@ int stringsCompare(char *str1, char *str2) {
 
 void findMinMaxWordsRec(BstNode *root, char **strings) {
     if (root != NULL) {
-        findMinMaxWordsRec(root->left, strings);
         if (stringsCompare(root->string, strings[0]) < 0)
             strings[0] = root->string;
         if (stringsCompare(root->string, strings[1]) > 0)
             strings[1] = root->string;
+        findMinMaxWordsRec(root->left, strings);
         findMinMaxWordsRec(root->right, strings);
     }
 }
@@ -180,6 +237,8 @@ int findMinMaxWords(BstNode *root, char ***result) {
     char **res = (char **) malloc(sizeof(char *) * 2);
     if (res == NULL)
         return 1;
+    res[0] = root->string;
+    res[1] = res[0];
     findMinMaxWordsRec(root, res);
     *result = res;
     return 0;
@@ -203,6 +262,27 @@ int findCommonestWords(char ***result, BstNode *root, int count) {
     }
     *result = res;
     return 0;
+}
+
+void findDepthRec(BstNode *node, int count, int *maxCount) {
+    if (node == NULL)
+        return;
+    count++;
+    if (node->left == NULL && node->right == NULL) {
+        if (count > *maxCount)
+            *maxCount = count;
+        return;
+    }
+    findDepthRec(node->left, count, maxCount);
+    findDepthRec(node->right, count, maxCount);
+}
+
+int findDepth(BstNode *root) {
+    if (root == NULL)
+        return 0;
+    int depth = 0;
+    findDepthRec(root, 0, &depth);
+    return depth;
 }
 
 void bstPrintRec(BstNode *root, int space) {
@@ -289,6 +369,8 @@ int trieInsert(TrieNode *root, char *string, BstNode *link) {
         }
         if (isFound) {
             node = node->kids[mid];
+            if (node->link != NULL && link != NULL)
+                return 2;
         } else {
             if (node->len == node->capacity) {
                 node->capacity *= 2;
@@ -314,13 +396,12 @@ int trieInsert(TrieNode *root, char *string, BstNode *link) {
             }
             newNode->kids = newKids;
             // low - index where insert newNode
-            if (low != node->len) { // check sizeof(node->kids) ?? TrieNode * or array
-                memmove(node->kids + low, node->kids + low + 1, sizeof(node->kids) * (node->len - low));
+            if (low != node->len) {
+                memmove(node->kids + low + 1, node->kids + low, sizeof(node->kids) * (node->len - low));
             }
             node->kids[low] = newNode;
             node->len++;
             node = newNode;
-
         }
     }
     node->link = link;
@@ -376,70 +457,260 @@ void triePrint(TrieNode *root) {
         triePrintRec(root->kids[x], word, 0);
 }
 
+int insert(TrieNode *trie, BstNode *bst, char *string) {
+    BstNode *bstNode;
+    int statusCode = bstInsert(bst, 1, string, &bstNode);
+    if (statusCode != 0) {
+        return statusCode;
+    }
+    statusCode = trieInsert(trie, string, bstNode);
+    if (statusCode != 0) {
+        return statusCode;
+    }
+    return 0;
+}
 
+int trieIsContain(TrieNode *trie, char *string) {
+    return trieSearch(trie, string) == NULL ? 0 : 1;
+}
+
+int isLexemeSymbol(char c) {
+    if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
+        return 1;
+    return 0;
+}
+
+int processFile(BstNode **result, char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        return 10;
+    }
+    TrieNode *trie;
+    BstNode *bst = NULL;
+    int bstLen = 0;
+    int statusCode = trieCreate(&trie);
+    if (statusCode != 0) {
+        fclose(file);
+        return statusCode;
+    }
+    int stringCapacity = 1;
+    int len = 0;
+    char *string = (char *) malloc(sizeof(char) * stringCapacity);
+    if (string == NULL)
+        return 1;
+    int isBreak = 0;
+    while (1) {
+        char c = getc(file);
+        if (c == EOF) {
+            if (len == 0)
+                break;
+            isBreak = 1;
+        }
+        if (len != 0 && (!isLexemeSymbol(c) || isBreak)) {
+            char *newString = (char *) realloc(string, sizeof(char) * (len + 1));
+            if (newString == NULL) {
+                free(string);
+                trieDestroy(trie);
+                if (bst != NULL)
+                    bstDestroy(bst);
+                fclose(file);
+                return 1;
+            }
+            string = newString;
+            string[len] = '\0';
+            TrieNode *search = trieSearch(trie, string);
+            if (search != NULL) {
+                if (bstLen > 1) {
+                    bstExcludeNode(&bst, &(search->link));
+                    search->link->key++;
+                    bstInsertNode(bst, search->link);
+                } else {
+                    search->link->key++;
+                }
+                free(string);
+            } else {
+                BstNode *bstNode;
+                if (bstLen != 0) {
+                    statusCode = bstInsert(bst, 1, string, &bstNode);
+                } else {
+                    statusCode = bstCreate(&bstNode, 1, string);
+                    bst = bstNode;
+                }
+                if (statusCode != 0) {
+                    free(string);
+                    trieDestroy(trie);
+                    if (bst != NULL)
+                        bstDestroy(bst);
+                    fclose(file);
+                    return statusCode;
+                }
+                bstLen++;
+                statusCode = trieInsert(trie, string, bstNode);
+                if (statusCode != 0) {
+                    trieDestroy(trie);
+                    if (bst != NULL)
+                        bstDestroy(bst);
+                    fclose(file);
+                    return statusCode;
+                }
+            }
+            if (isBreak)
+                break;
+            stringCapacity = 1;
+            len = 0;
+            string = (char *) malloc(sizeof(char) * stringCapacity);
+            if (string == NULL) {
+                trieDestroy(trie);
+                if (bst != NULL)
+                    bstDestroy(bst);
+                fclose(file);
+                return 1;
+            }
+            continue;
+        } else if (!isLexemeSymbol(c)) {
+            continue;
+        }
+        if (len == stringCapacity) {
+            stringCapacity *= 2;
+            char *newString = (char *) realloc(string, sizeof(char) * stringCapacity);
+            if (newString == NULL) {
+                free(string);
+                trieDestroy(trie);
+                if (bst != NULL)
+                    bstDestroy(bst);
+                fclose(file);
+                return 1;
+            }
+            string = newString;
+        }
+        string[len] = c;
+        len++;
+    }
+    fclose(file);
+//    triePrint(trie);
+    trieDestroy(trie);
+    if (bstLen == 0) {
+        return 5;
+    }
+    *result = bst;
+//    bstPrint(bst);
+    return 0;
+}
+
+void bstSaveToFileRec(BstNode *node, FILE *file) {
+    if (node == NULL)
+        return;
+    char *ptr = (char *) &node->key;
+    for (int x = 0; x < sizeof(int); x++) {
+        putc(*ptr++, file);
+    }
+    int stringSize = node->string == NULL ? 0 : strlen(node->string);
+    ptr = (char *) &stringSize;
+    for (int x = 0; x < sizeof(int); x++) {
+        putc(*ptr++, file);
+    }
+    for (int x = 0; x < stringSize; x++) {
+        putc(node->string[x], file);
+    }
+    bstSaveToFileRec(node->left, file);
+    bstSaveToFileRec(node->right, file);
+}
+
+int bstSaveToFile(BstNode *root, char *filename) {
+    if (root == NULL)
+        return 2;
+    FILE *file = fopen(filename, "w");
+    if (file == NULL)
+        return 10;
+    bstSaveToFileRec(root, file);
+    fclose(file);
+    return 0;
+}
+
+int bstLoadFromFile(BstNode **result, char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+        return 10;
+    BstNode *bst = NULL;
+    int key = 0;
+    int stringLen = 0;
+    char c;
+    while ((c = getc(file)) != EOF) {
+        ungetc(c, file);
+        char *ptr = (char *) &key;
+        for (int x = 0; x < sizeof(int); x++) {
+            c = getc(file);
+            if (c == EOF) {
+                fclose(file);
+                bstDestroy(bst);
+                return 10;
+            }
+            *ptr = c;
+            ptr++;
+        }
+        ptr = (char *) &stringLen;
+        for (int x = 0; x < sizeof(int); x++) {
+            c = getc(file);
+            if (c == EOF) {
+                fclose(file);
+                bstDestroy(bst);
+                return 10;
+            }
+            *ptr = c;
+            ptr++;
+        }
+        char *string = (char *) malloc(sizeof(char) * (stringLen + 1));
+        if (string == NULL) {
+            fclose(file);
+            bstDestroy(bst);
+            return 1;
+        }
+        string[stringLen] = '\n';
+        ptr = string;
+        for (int x = 0; x < stringLen; x++) {
+            c = getc(file);
+            if (c == EOF) {
+                fclose(file);
+                bstDestroy(bst);
+                free(string);
+                return 10;
+            }
+            *ptr = c;
+            ptr++;
+        }
+        if (bst == NULL) {
+            int statusCode = bstCreate(&bst, key, string);
+            if (statusCode != 0) {
+                fclose(file);
+                bstDestroy(bst);
+                free(string);
+                return statusCode;
+            }
+        } else {
+            int statusCode = bstInsert(bst, key, string, NULL);
+            if (statusCode != 0) {
+                fclose(file);
+                bstDestroy(bst);
+                free(string);
+                return statusCode;
+            }
+        }
+    }
+    fclose(file);
+    *result = bst;
+    return 0;
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2)
         return 69;
 
-    FILE *data;
     char *filename = argv[1];
+    BstNode *bst;
+    printf("%d func\n", bstLoadFromFile(&bst, "kek.txt"));
+    bstPrint(bst);
+//    printf("%d func\n", processFile(&bst, filename));
+//    printf("%d func\n", bstSaveToFile(bst, "kek.txt"));
 
-    TrieNode *t;
-    trieCreate(&t);
-    char string[40];
-    char string2[40];
-    strcpy(string, "qwerty");
-    strcpy(string2, "qwop");
-    trieInsert(t, string, NULL);
-    trieInsert(t, string2, NULL);
-    triePrint(t);
-
-    printf("%c\n", trieSearch(t, "qwerty")->key);
-
-
-//    BstNode *bst;
-//    char *str = (char *) malloc(sizeof(char));
-//    str[0] = '1';
-//    bstCreate(&bst, 8, str);
-//    bstInsert(bst, 3, "123");
-//    bstInsert(bst, 13, "1234");
-//    bstInsert(bst, 11, "12543");
-//    bstInsert(bst, 15, "1223");
-//    bstInsert(bst, 12, "12233243");
-//
-//    bstPrint(bst);
-
-//    printf("%d\n", findWordCount(bst, "12543"));
-//    char **strings;
-//    findMinMaxWords(bst, &strings);
-//    for (int x = 0; x < 2; x ++) {
-//        printf("%s\n", strings[x]);
-//    }
-
-//    if ((data = fopen(filename, "r")) == NULL) {
-//        return 1;
-//    }
-//    fclose(data);
-
-//    int key = 4;
-//    int low = 0;
-//    int high = 5 - 1;
-//    int isFound = 0;
-//    int arr[] = {1, 3, 5, 7, 8};
-//    while (low <= high) {
-//        int mid = (low + high) >> 1;
-//        int midVal = arr[mid];
-//
-//        if (midVal < key) {
-//            low = mid + 1;
-//        } else if (midVal > key) {
-//            high = mid - 1;
-//        } else {
-//            printf("%d\n", mid);
-//            break;
-//        }
-//        printf("\n\n%d\n", low);
-//    }
     return 0;
 }
