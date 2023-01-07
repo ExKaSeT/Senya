@@ -95,7 +95,8 @@ short isInclude(char *string, char *path) {
     if (file == NULL) {
         return -1;
     }
-    int buffLen = strLen(string) > 50 ? strLen(string) * 3 : 100;
+    int stringLen = strLen(string);
+    int buffLen = stringLen > 50 ? stringLen * 3 : 100;
     char *buff = (char *) malloc(sizeof(char) * buffLen);
     if (buff == NULL) {
         return -1;
@@ -114,9 +115,12 @@ short isInclude(char *string, char *path) {
                 return 1;
             }
             ind = 0;
+            for (int x = buffLen - stringLen; x < buffLen - 1; x++) {
+                buff[ind] = buff[x];
+                ind++;
+            }
         }
     }
-//    printf("%s\n\n", buff);
     buff[ind] = '\0';
     result = KMP(string, buff);
     if (result >= 0) {
