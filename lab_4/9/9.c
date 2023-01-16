@@ -400,7 +400,8 @@ int replaceDirectives(HashMap *directives, FILE *data) {
         } else if (*remainsAdd != '\n') {
             fprintf(out, "%s", remainsAdd);
         }
-        putc(metSeparator, out);
+        if (metSeparator != 0)
+            putc(metSeparator, out);
         free(string);
         metSeparator = 0;
     }
