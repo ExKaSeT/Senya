@@ -26,8 +26,9 @@ int main()
     constructed_logger_3
         ->log("homyak", logger::severity::critical);
 
-    delete constructed_logger_2;
     delete constructed_logger;
+    delete constructed_logger_2;
+    delete constructed_logger_3;
     delete builder;
 
     return 0;
