@@ -3,26 +3,28 @@
 
 #include <iostream>
 
-class logger {
+class logger
+{
 
 public:
 
-    enum class severity {
-        trace,
-        debug,
-        information,
-        warning,
-        error,
-        critical
-    };
+	enum class severity
+	{
+		trace,
+		debug,
+		information,
+		warning,
+		error,
+		critical
+	};
 
 public:
 
-    virtual ~logger();
+	virtual ~logger();
 
 public:
 
-    virtual logger const *log(const std::string &, severity) const = 0;
+	virtual logger const* log(const std::string&, severity) const = 0;
 
 };
 
