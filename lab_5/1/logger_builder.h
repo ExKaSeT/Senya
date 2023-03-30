@@ -4,8 +4,7 @@
 #include <iostream>
 #include "logger.h"
 
-class logger_builder
-{
+class logger_builder {
 
 public:
 

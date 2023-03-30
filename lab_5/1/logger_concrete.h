@@ -5,8 +5,7 @@
 #include "logger_builder_concrete.h"
 #include <map>
 
-class logger_concrete final : public logger
-{
+class logger_concrete final : public logger {
 
     friend class logger_builder_concrete;
 
@@ -18,9 +17,13 @@ private:
 
     static std::map<std::string, std::pair<std::ofstream *, size_t> > _streams;
 
+    static const std::map<severity, std::string> severity_string;
+
+    static severity severityFromString(const std::string& severity_str);
+
 private:
 
-    logger_concrete(std::map<std::string, logger::severity> const &);
+    explicit logger_concrete(std::map<std::string, logger::severity> const &);
 
 public:
 
@@ -28,7 +31,7 @@ public:
 
     logger_concrete &operator=(logger_concrete const &) = delete;
 
-    ~logger_concrete();
+    ~logger_concrete() override;
 
 public:
 

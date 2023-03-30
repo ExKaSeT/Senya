@@ -3,13 +3,11 @@
 
 #include <iostream>
 
-class logger
-{
+class logger {
 
 public:
 
-    enum class severity
-    {
+    enum class severity {
         trace,
         debug,
         information,

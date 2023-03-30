@@ -1,5 +1,5 @@
-#include "logger/logger.h"
-#include "logger/logger_builder_concrete.h"
+#include "./logger.h"
+#include "./logger_builder_concrete.h"
 
 int main()
 {
@@ -15,11 +15,16 @@ int main()
         ->add_stream("file4.txt", logger::severity::warning)
         ->construct();
 
+    logger *constructed_logger_3 = logger_builder_concrete::file_construct("log_settings.txt");
+
     constructed_logger
         ->log("kek lol 123", logger::severity::information);
 
     constructed_logger_2
         ->log("123 kek lol", logger::severity::error);
+
+    constructed_logger_3
+        ->log("homyak", logger::severity::critical);
 
     delete constructed_logger_2;
     delete constructed_logger;
