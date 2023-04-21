@@ -5,7 +5,6 @@
 #include "logger/logger.h"
 #include "logger/logger_builder.h"
 
-
 class memory_2 : public memory
 {
 public:
@@ -14,7 +13,7 @@ public:
 
 	virtual void* allocate(size_t target_size) const override;
 
-	virtual void deallocate(void const* const target_to_dealloc) const override;
+	virtual void deallocate(void* const target_to_dealloc) const override;
 
 	memory_2(memory_2 const&) = delete;
 
