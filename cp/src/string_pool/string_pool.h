@@ -10,7 +10,9 @@ class StringPool
 {
 private:
 	// Приватный конструктор, чтобы запретить создание объектов извне
-	StringPool() {}
+	StringPool()
+	{
+	}
 
 	// Хэш-таблица для хранения строк
 	std::unordered_map<std::string, int> string_pool_;

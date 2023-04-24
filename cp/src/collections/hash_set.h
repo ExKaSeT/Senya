@@ -38,16 +38,18 @@ public:
 		size_++;
 	}
 
-	T contains(const T& value) const override
+	bool contains(const T& value, T& get) override
 	{
 		std::vector<T> list;
 		if (!data.search(value.hashcode(), list))
-			return nullptr;
+			return false;
 		for (T elem : list) {
-			if (value == elem)
-				return elem;
+			if (value == elem) {
+				get = elem;
+				return true;
+			}
 		}
-		return nullptr;
+		return false;
 	}
 
 	void remove(const T& value) override

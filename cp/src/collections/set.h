@@ -11,9 +11,9 @@ public:
 
 	virtual void add(const T& value) = 0;
 
-	virtual T contains(const T& value) const = 0;
+	virtual bool contains(const T& value, T& get) = 0;
 
-	virtual bool remove(const T& value) = 0;
+	virtual void remove(const T& value) = 0;
 
 	virtual void clear() = 0;
 
