@@ -5,7 +5,8 @@
 
 #include <string>
 #include "../collections/hashable.h"
-#include "string_pool/string_pool.h"
+#include "../string_pool/string_pool.h"
+
 
 
 class ContestInfo : public Hashable<ContestInfo>
@@ -13,45 +14,41 @@ class ContestInfo : public Hashable<ContestInfo>
 private:
 
 	int candidate_id;
-	std::string& last_name;
-	std::string& first_name;
-	std::string& patronymic;
-	std::string& birth_date;
-	std::string& resume_link;
+	const std::string* last_name;
+	const std::string* first_name;
+	const std::string* patronymic;
+	const std::string* birth_date;
+	const std::string* resume_link;
 	int hr_manager_id;
 	int contest_id;
-	std::string& programming_language;
+	const std::string* programming_language;
 	int num_tasks;
 	int solved_tasks;
 	bool cheating_detected;
 
+	static inline StringPool& string_pool = StringPool::instance();
+
 public:
 
 	ContestInfo(int candidate_id,
-		std::string& last_name,
-		std::string& first_name,
-		std::string& patronymic,
-		std::string& birth_date,
-		std::string& resume_link,
+		const std::string& last_name,
+		const std::string& first_name,
+		const std::string& patronymic,
+		const std::string& birth_date,
+		const std::string& resume_link,
 		int hr_manager_id,
 		int contest_id,
-		std::string& programming_language,
+		const std::string& programming_language,
 		int num_tasks,
 		int solved_tasks,
 		bool cheating_detected)
-		: candidate_id(candidate_id), last_name(last_name), first_name(first_name), patronymic(patronymic),
-		  birth_date(birth_date), resume_link(resume_link), hr_manager_id(hr_manager_id), contest_id(contest_id),
-		  programming_language(programming_language), num_tasks(num_tasks), solved_tasks(solved_tasks),
-		  cheating_detected(cheating_detected)
+		: candidate_id(candidate_id), last_name(&string_pool.get_string(last_name)),
+		  first_name(&string_pool.get_string(first_name)), patronymic(&string_pool.get_string(patronymic)),
+		  birth_date(&string_pool.get_string(birth_date)), resume_link(&string_pool.get_string(resume_link)),
+		  hr_manager_id(hr_manager_id), contest_id(contest_id),
+		  programming_language(&string_pool.get_string(programming_language)), num_tasks(num_tasks),
+		  solved_tasks(solved_tasks), cheating_detected(cheating_detected)
 	{
-		StringPool& string_pool = StringPool::instance();
-
-		this->last_name = string_pool.get_string(last_name);
-		this->first_name = string_pool.get_string(first_name);
-		this->patronymic = string_pool.get_string(patronymic);
-		this->birth_date = string_pool.get_string(birth_date);
-		this->resume_link = string_pool.get_string(resume_link);
-		this->programming_language = string_pool.get_string(programming_language);
 	}
 
 	static auto get_obj_for_search(int candidate_id, int contest_id)
@@ -72,51 +69,88 @@ public:
 		return this->candidate_id == other.candidate_id && this->contest_id == other.contest_id;
 	}
 
-	int GetCandidateId() const
+	ContestInfo& operator=(const ContestInfo& other) {
+		if (this != &other) {
+
+//			string_pool.unget_string(*last_name);
+//			string_pool.unget_string(*first_name);
+//			string_pool.unget_string(*patronymic);
+//			string_pool.unget_string(*birth_date);
+//			string_pool.unget_string(*resume_link);
+//			string_pool.unget_string(*programming_language);
+
+			last_name = &string_pool.get_string(other.getLastName());
+			first_name = &string_pool.get_string(other.getFirstName());
+			patronymic = &string_pool.get_string(other.getPatronymic());
+			birth_date = &string_pool.get_string(other.getBirthDate());
+			resume_link = &string_pool.get_string(other.getResumeLink());
+			programming_language = &string_pool.get_string(other.getProgrammingLanguage());
+
+			candidate_id = other.getCandidateId();
+			hr_manager_id = other.getHrManagerId();
+			contest_id = other.getContestId();
+			num_tasks = other.getNumTasks();
+			solved_tasks = other.getSolvedTasks();
+			cheating_detected = other.isCheatingDetected();
+		}
+		return *this;
+	}
+
+	~ContestInfo()
+	{
+//		string_pool.unget_string(*last_name);
+//		string_pool.unget_string(*first_name);
+//		string_pool.unget_string(*patronymic);
+//		string_pool.unget_string(*birth_date);
+//		string_pool.unget_string(*resume_link);
+//		string_pool.unget_string(*programming_language);
+	}
+
+	int getCandidateId() const
 	{
 		return candidate_id;
 	}
-	const std::string& GetLastName() const
+	const std::string& getLastName() const
 	{
-		return last_name;
+		return *last_name;
 	}
-	const std::string& GetFirstName() const
+	const std::string& getFirstName() const
 	{
-		return first_name;
+		return *first_name;
 	}
-	const std::string& GetPatronymic() const
+	const std::string& getPatronymic() const
 	{
-		return patronymic;
+		return *patronymic;
 	}
-	const std::string& GetBirthDate() const
+	const std::string& getBirthDate() const
 	{
-		return birth_date;
+		return *birth_date;
 	}
-	const std::string& GetResumeLink() const
+	const std::string& getResumeLink() const
 	{
-		return resume_link;
+		return *resume_link;
 	}
-	int GetHrManagerId() const
+	int getHrManagerId() const
 	{
 		return hr_manager_id;
 	}
-	int GetContestId() const
+	int getContestId() const
 	{
 		return contest_id;
 	}
-	const std::string& GetProgrammingLanguage() const
+	const std::string& getProgrammingLanguage() const
 	{
-		return programming_language;
+		return *programming_language;
 	}
-	int GetNumTasks() const
+	int getNumTasks() const
 	{
 		return num_tasks;
 	}
-	int GetSolvedTasks() const
+	int getSolvedTasks() const
 	{
 		return solved_tasks;
 	}
-	bool IsCheatingDetected() const
+	bool isCheatingDetected() const
 	{
 		return cheating_detected;
 	}

@@ -9,41 +9,52 @@
 class StringPool
 {
 private:
-	// Приватный конструктор, чтобы запретить создание объектов извне
 	StringPool()
 	{
 	}
 
-	// Хэш-таблица для хранения строк
 	std::unordered_map<std::string, int> string_pool_;
 
 public:
-	// Получение единственного экземпляра класса
+
 	static StringPool& instance()
 	{
 		static StringPool pool;
 		return pool;
 	}
 
-	// Получение строки из пула
 	const std::string& get_string(const std::string& str)
 	{
-		// Поиск строки в пуле
 		auto it = string_pool_.find(str);
 		if (it != string_pool_.end())
 		{
-			// Если строка уже есть в пуле, то возвращаем её
 			it->second++;
+
+//			std::cout << "get_string: ";
+//			for (const auto& elem : string_pool_) {
+//				std::cout << elem.first << " + " << elem.second << " | ";
+//			}
+//			std::cout << "\n";
+
 			return it->first;
 		}
 		else
 		{
-			// Иначе добавляем строку в пул и возвращаем её
 			auto [new_it, inserted] = string_pool_.emplace(str, 1);
+
+//			std::cout << "get_string: ";
+//			for (const auto& elem : string_pool_) {
+//				std::cout << elem.first << " + " << elem.second << " | ";
+//			}
+//			std::cout << "\n";
+
 			return new_it->first;
 		}
+
+
 	}
 
+	// не работает нихуя заебался
 	void unget_string(const std::string& str)
 	{
 		auto it = string_pool_.find(str);
@@ -53,6 +64,12 @@ public:
 			if (it->second <= 0)
 				string_pool_.erase(it);
 		}
+
+//		std::cout << str << " :unget_string: ";
+//		for (const auto& elem : string_pool_) {
+//			std::cout << elem.first << " + " << elem.second << " | ";
+//		}
+//		std::cout << "\n";
 	}
 };
 

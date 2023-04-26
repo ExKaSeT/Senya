@@ -4,9 +4,11 @@
 
 #include <type_traits>
 #include <vector>
+#include <optional>
 #include "set.h"
 #include "hashable.h"
 #include "b-tree/trees/vanilla_b_plus_tree.h"
+
 
 template<typename T>
 class HashSet : public Set<T>
@@ -24,9 +26,12 @@ public:
 	{
 		size_t hashcode = value.hashcode();
 		std::vector<T> list;
-		if (data.search(hashcode, list)) {
-			for (auto it = list.begin(); it != list.end(); it++) {
-				if (value == *it) {
+		if (data.search(hashcode, list))
+		{
+			for (auto it = list.begin(); it != list.end(); it++)
+			{
+				if (value == *it)
+				{
 					list.erase(it);
 					size_--;
 					break;
@@ -38,18 +43,17 @@ public:
 		size_++;
 	}
 
-	bool contains(const T& value, T& get) override
+	std::optional<T> contains(const T& value) override
 	{
 		std::vector<T> list;
 		if (!data.search(value.hashcode(), list))
-			return false;
-		for (T elem : list) {
-			if (value == elem) {
-				get = elem;
-				return true;
-			}
+			return std::nullopt;
+		for (T elem : list)
+		{
+			if (value == elem)
+				return elem;
 		}
-		return false;
+		return std::nullopt;
 	}
 
 	void remove(const T& value) override
@@ -58,8 +62,10 @@ public:
 		size_t hashcode = value.hashcode();
 		if (!data.search(hashcode, list))
 			return;
-		for (auto it = list.begin(); it != list.end(); it++) {
-			if (value == *it) {
+		for (auto it = list.begin(); it != list.end(); it++)
+		{
+			if (value == *it)
+			{
 				list.erase(it);
 				if (list.empty())
 					data.delete_key(value.hashcode());
