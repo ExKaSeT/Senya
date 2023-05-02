@@ -10,7 +10,7 @@
 #include <boost/archive/text_iarchive.hpp>
 
 
-class ContestInfo : public Hashable<ContestInfo>, public Serializable
+class ContestInfo : public Hashable, public Serializable
 {
 private:
 
@@ -69,10 +69,26 @@ public:
 	{
 	}
 
-	static auto get_obj_for_search(int candidate_id, int contest_id)
+	ContestInfo(const ContestInfo& other)
+		: candidate_id(other.candidate_id),
+		  last_name(&string_pool.get_string(*other.last_name)),
+		  first_name(&string_pool.get_string(*other.first_name)),
+		  patronymic(&string_pool.get_string(*other.patronymic)),
+		  birth_date(&string_pool.get_string(*other.birth_date)),
+		  resume_link(&string_pool.get_string(*other.resume_link)),
+		  hr_manager_id(other.hr_manager_id),
+		  contest_id(other.contest_id),
+		  programming_language(&string_pool.get_string(*other.programming_language)),
+		  num_tasks(other.num_tasks),
+		  solved_tasks(other.solved_tasks),
+		  cheating_detected(other.cheating_detected)
+	{
+	}
+
+	static ContestInfo get_obj_for_search(int candidate_id, int contest_id)
 	{
 		std::string null;
-		return ContestInfo(candidate_id, null, null, null, null, null, 0, contest_id, null, 0, 0, false);
+		return {candidate_id, null, null, null, null, null, 0, contest_id, null, 0, 0, false};
 	}
 
 	size_t hashcode() const override
@@ -82,7 +98,7 @@ public:
 		return h1 ^ (h2 << 1);
 	}
 
-	bool operator==(const ContestInfo& other) const override
+	bool operator==(const ContestInfo& other) const
 	{
 		return this->candidate_id == other.candidate_id && this->contest_id == other.contest_id;
 	}

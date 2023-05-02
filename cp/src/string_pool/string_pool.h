@@ -40,7 +40,7 @@ public:
 		}
 		else
 		{
-			auto [new_it, inserted] = string_pool_.emplace(str, 1);
+			auto [new_it, _] = string_pool_.emplace(str, 1);
 
 //			std::cout << "get_string: ";
 //			for (const auto& elem : string_pool_) {
@@ -70,6 +70,10 @@ public:
 //			std::cout << elem.first << " + " << elem.second << " | ";
 //		}
 //		std::cout << "\n";
+	}
+
+	~StringPool() {
+		string_pool_.clear();
 	}
 };
 

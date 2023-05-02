@@ -13,7 +13,7 @@
 template<typename T>
 class HashSet : public Set<T>
 {
-	static_assert(std::is_base_of<Hashable<T>, T>::value, "Type T must extend Hashable");
+	static_assert(std::is_base_of<Hashable, T>::value, "Type T must extend Hashable");
 
 private:
 

@@ -1,18 +1,61 @@
-#include "collections/b-tree/trees/vanilla_b_plus_tree.h"
-#include "collections/hash_set.h"
+//#include "collections/b-tree/trees/vanilla_b_plus_tree.h"
+//#include "collections/hash_set.h"
 #include "data_types/contest_info.h"
+#include "data_types/shared_object.h"
+#include "processors/processor.h"
+#include "processors/client/client_processor.h"
+#include "processors/server/server_processor.h"
+
+
+const std::string CON_MEM_NAME = "con_mem";
+const std::string CON_MUTEX_NAME = "con_mutex";
+const int SERVER_STATUS_CODE = 1;
+const int CLIENT_STATUS_CODE = 2;
+const int STORAGE_STATUS_CODE = 2;
 
 
 int main()
 {
-	auto tree = HashSet<ContestInfo>();
 	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
 		991, 992, "programming_language", 993, 994, true);
-	std::cout << contestInfo.getProgrammingLanguage() << "\n";
+	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME);
+//	clientProcessor.add(contestInfo);
+	clientProcessor.contains(contestInfo).value().print();
 
-	std::cout << contestInfo.serialize();
-	contestInfo = ContestInfo::deserialize(contestInfo.serialize());
-	contestInfo.print();
+//	StorageProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME);
+//	while (true)
+//		serverProcessor.process();
+
+
+//	system("chcp 1251");
+//	setbuf(stdout, 0);
+
+//	ClientConnection clientConnection(CON_MEM_NAME, CON_MUTEX_NAME);
+//	getchar();
+
+//	ServerConnection clientConnection(CON_MEM_NAME, CON_MUTEX_NAME);
+//	getchar();
+
+
+
+
+
+//	auto tree = HashSet<ContestInfo>();
+//	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+//		991, 992, "programming_language", 993, 994, true);
+//
+//	SharedObject sharedObject(1, 1, contestInfo.serialize());
+//
+//	std::cout << sharedObject.serialize() << std::endl;
+//
+//	auto shared = SharedObject::deserialize(sharedObject.serialize().c_str());
+//	ContestInfo::deserialize(shared.GetData()).print();
+
+//	std::cout << contestInfo.getProgrammingLanguage() << "\n";
+//
+//	std::cout << contestInfo.serialize();
+//	contestInfo = ContestInfo::deserialize(contestInfo.serialize());
+//	contestInfo.print();
 
 
 //	tree.add(contestInfo);
