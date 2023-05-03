@@ -93,6 +93,10 @@ public:
 			return std::nullopt;
 		return { data };
 	}
+
+	void print() {
+		std::cout << "\nStatus code: " << status_code << "\nReqRes code: " << request_response_code << "\nData: " << data << std::endl;
+	}
 };
 
 #endif //PROGC_SRC_DATA_TYPES_SHARED_OBJECT_H

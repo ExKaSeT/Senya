@@ -5,6 +5,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <thread>
+#include <queue>
 #include "../../connection/connection.h"
 #include "../../connection/memory_connection.h"
 #include "../processor.h"
@@ -15,11 +16,18 @@
 
 using namespace boost::interprocess;
 
-class StorageProcessor : public Processor
+struct Storage
+{
+	std::unique_ptr<Connection> connection;
+	std::unique_ptr<Connection> client_requested;
+	std::queue<std::unique_ptr<Connection>> clients_to_process;
+};
+
+class ServerProcessor : public Processor
 {
 private:
-
-	HashSet<ContestInfo> set;
+	// storage : clients
+	std::vector<Storage> storages;
 	std::vector<std::unique_ptr<Connection>> clients;
 	int client_id = 0;
 	const int this_status_code;
@@ -28,9 +36,21 @@ private:
 
 public:
 
-	StorageProcessor(const int statusCode, const std::string& memNameForConnect,
-		const std::string& mutexNameForConnect) : this_status_code(statusCode)
+	ServerProcessor(const int statusCode, const std::string& memNameForConnect,
+		const std::string& mutexNameForConnect, const std::vector<std::string>& storageMemNames)
+		: this_status_code(statusCode)
 	{
+		if (storageMemNames.empty())
+			throw std::runtime_error("1 storage minimum");
+
+		for (const auto& storageMemName : storageMemNames)
+		{
+			storages.emplace_back();
+			storages.back().connection = std::make_unique<MemoryConnection>(true, storageMemName);
+			storages.back().client_requested = nullptr;
+			storages.back().clients_to_process = {};
+		}
+
 		try
 		{ named_mutex::remove(mutexNameForConnect.c_str()); }
 		catch (...)
@@ -38,14 +58,14 @@ public:
 		connection = new MemoryConnection(true, memNameForConnect);
 		connection_mutex = new named_mutex(create_only, mutexNameForConnect.c_str());
 
-		std::string connection_name = "client" + std::to_string(client_id);
-		clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
-		clients.back()->sendMessage(SharedObject(this_status_code, OK, "null"));
-		client_id++;
-		connection->sendMessage(SharedObject(this_status_code, OK, connection_name));
+//		std::string connection_name = "client" + std::to_string(client_id);
+//		clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
+//		clients.back()->sendMessage(SharedObject(this_status_code, OK, "null"));
+//		client_id++;
+		connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 	}
 
-	~StorageProcessor()
+	~ServerProcessor()
 	{
 		delete connection;
 		delete connection_mutex;
@@ -53,66 +73,78 @@ public:
 
 	void process() override
 	{
+		// clients get connection
 		if ((SharedObject::GetStatusCode(connection->receiveMessage()) != this_status_code))
 		{
 			std::string connection_name = "client" + std::to_string(client_id);
 			clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
-			clients.back()->sendMessage(SharedObject(this_status_code, OK, "null"));
+			clients.back()->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 			client_id++;
 			connection->sendMessage(SharedObject(this_status_code, OK, connection_name));
+			std::cout << "Create connection: " << connection_name << std::endl;
 		}
 
-
-		for (auto it = clients.begin(); it != clients.end(); )
+		// processing requests from clients
+		for (auto it = clients.begin(); it != clients.end();)
 		{
 			Connection* client_connection = it->get();
 			if ((SharedObject::GetStatusCode(client_connection->receiveMessage()) != this_status_code))
 			{
-				std::cout << std::string(client_connection->receiveMessage()) << ";\n";
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
+				std::cout << "Client request:\n";
+				message.print();
 				if (!message.GetData())
 				{
+					connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 					return;
 				}
 				auto data = message.GetData().value();
-				std::string response = "null";
 				switch (message.GetRequestResponseCode())
 				{
-				case ADD:
-				{
-					set.add(ContestInfo::deserialize(data));
-					break;
-				}
-				case CONTAINS:
-				{
-					auto result = set.contains(ContestInfo::deserialize(data));
-					if (result)
-						response = result.value().serialize();
-					break;
-				}
-				case REMOVE:
-				{
-					set.remove(ContestInfo::deserialize(data));
-					break;
-				}
 				case LOG:
 				{
-					std::cout << "LOG: " << data;
+					std::cout << "LOG: " << data << std::endl;
+					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 					break;
 				}
-				case GET_CONNECTION:
-					break;
-				case OK:
-					break;
 				case CLOSE_CONNECTION:
 				{
 					it = clients.erase(it);
 					continue;
 				}
+				default:
+				{
+					auto& storage = storages.at(ContestInfo::deserialize(data).hashcode() % storages.size());
+					storage.clients_to_process.push(std::move(*it));
+					it = clients.erase(it);
+					continue;
 				}
-				client_connection->sendMessage(SharedObject(this_status_code, OK, response));
+				}
+
 			}
 			it++;
+		}
+
+		for (auto& storage : storages)
+		{
+			if (storage.client_requested == nullptr && !storage.clients_to_process.empty())
+			{
+				storage.client_requested = std::move(storage.clients_to_process.front());
+				storage.clients_to_process.pop();
+				storage.connection->sendMessage(SharedObject::deserialize(storage.client_requested->receiveMessage()));
+			}
+
+			if (storage.client_requested != nullptr)
+			{
+				if (SharedObject::GetStatusCode(storage.connection->receiveMessage())
+					== SharedObject::GetStatusCode(storage.client_requested->receiveMessage()))
+				{
+					continue;
+				}
+				storage.client_requested->sendMessage(SharedObject::deserialize(storage.connection->receiveMessage()));
+				clients.push_back(std::move(storage.client_requested));
+				storage.client_requested = nullptr;
+			}
 		}
 	}
 };

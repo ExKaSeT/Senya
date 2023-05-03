@@ -46,6 +46,7 @@ public:
 		if (!memName)
 			throw std::runtime_error("Unable to establish a connection");
 		connection = new MemoryConnection(false, memName.value());
+		std::cout << "Get connection: " << memName.value() << std::endl;
 	}
 
 	~ClientProcessor()

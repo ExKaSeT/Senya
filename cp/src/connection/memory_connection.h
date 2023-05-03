@@ -59,10 +59,12 @@ public:
 		std::string str = data.serialize();
 		const char* data_str = str.c_str();
 		char* address = static_cast<char*>(mreg->get_address());
-//		std::cout << str << ";" << std::string(static_cast<char*>(mreg->get_address())) << "\n";
 		std::sprintf(address + 1, data_str + 1);
-//		std::cout << static_cast<char*>(mreg->get_address()) << "\n;\n";
 		*address = *data_str;
+	}
+
+	const std::string& getName() {
+		return mem_name;
 	}
 };
 
