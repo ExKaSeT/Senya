@@ -18,9 +18,9 @@ using namespace boost::interprocess;
 
 struct Storage
 {
-	std::unique_ptr<Connection> connection;
-	std::unique_ptr<Connection> client_requested;
-	std::queue<std::unique_ptr<Connection>> clients_to_process;
+	std::unique_ptr<MemoryConnection> connection;
+	std::unique_ptr<MemoryConnection> client_requested;
+	std::queue<std::unique_ptr<MemoryConnection>> clients_to_process;
 };
 
 class ServerProcessor : public Processor
@@ -28,7 +28,7 @@ class ServerProcessor : public Processor
 private:
 	// storage : clients
 	std::vector<Storage> storages;
-	std::vector<std::unique_ptr<Connection>> clients;
+	std::vector<std::unique_ptr<MemoryConnection>> clients;
 	int client_id = 0;
 	const int this_status_code;
 	const Connection* connection;
@@ -87,17 +87,21 @@ public:
 		// processing requests from clients
 		for (auto it = clients.begin(); it != clients.end();)
 		{
-			Connection* client_connection = it->get();
+			MemoryConnection* client_connection = it->get();
 			if ((SharedObject::GetStatusCode(client_connection->receiveMessage()) != this_status_code))
 			{
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
-				std::cout << "Client request:\n";
+				std::cout << "Client '" << client_connection->getName() << "' request ~~~~~~~";
 				message.print();
-				if (!message.GetData())
-				{
-					connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
-					return;
+				if (message.GetRequestResponseCode() == CLOSE_CONNECTION) {
+					it = clients.erase(it);
+					continue;
 				}
+//				if (!message.GetData())
+//				{
+//					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
+//					return;
+//				}
 				auto data = message.GetData().value();
 				switch (message.GetRequestResponseCode())
 				{
@@ -107,11 +111,6 @@ public:
 					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 					break;
 				}
-				case CLOSE_CONNECTION:
-				{
-					it = clients.erase(it);
-					continue;
-				}
 				default:
 				{
 					auto& storage = storages.at(ContestInfo::deserialize(data).hashcode() % storages.size());
@@ -120,7 +119,9 @@ public:
 					continue;
 				}
 				}
-
+//				for (auto& client : clients)
+//					std::cout << client->getName() << " |";
+//				std::cout << std::endl;
 			}
 			it++;
 		}
@@ -141,7 +142,9 @@ public:
 				{
 					continue;
 				}
-				storage.client_requested->sendMessage(SharedObject::deserialize(storage.connection->receiveMessage()));
+				auto message = SharedObject::deserialize(storage.connection->receiveMessage());
+				message.setStatusCode(this_status_code);
+				storage.client_requested->sendMessage(message);
 				clients.push_back(std::move(storage.client_requested));
 				storage.client_requested = nullptr;
 			}

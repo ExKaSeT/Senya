@@ -18,10 +18,10 @@ const int STORAGE_STATUS_CODE = 3;
 
 int main()
 {
-	ContestInfo contestInfo(98, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
 		991, 992, "programming_language", 993, 994, true);
 	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME);
-	clientProcessor.add(contestInfo);
+//	clientProcessor.add(contestInfo);
 	clientProcessor.contains(contestInfo).value().print();
 
 //	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, {"storage1", "storage2"});

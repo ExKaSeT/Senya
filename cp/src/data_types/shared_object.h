@@ -94,6 +94,10 @@ public:
 		return { data };
 	}
 
+	void setStatusCode(int statusCode) {
+		status_code = static_cast<char>(statusCode);
+	}
+
 	void print() {
 		std::cout << "\nStatus code: " << status_code << "\nReqRes code: " << request_response_code << "\nData: " << data << std::endl;
 	}
