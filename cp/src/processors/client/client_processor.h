@@ -77,6 +77,12 @@ public:
 		waitResponse();
 	};
 
+	void log(const std::string& message)
+	{
+		connection->sendMessage(SharedObject(this_status_code, LOG, message));
+		waitResponse();
+	};
+
 	void process() override
 	{
 

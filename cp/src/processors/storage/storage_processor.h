@@ -22,6 +22,8 @@ private:
 	HashSet<ContestInfo> set;
 	const int this_status_code;
 	const Connection* connection;
+	const Connection* connection_log;
+	std::queue<std::string> to_log;
 
 public:
 
@@ -29,11 +31,13 @@ public:
 	{
 		connection = new MemoryConnection(false, memName);
 		connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
+		connection_log = new MemoryConnection(false, memName + "log");
 	}
 
 	~StorageProcessor()
 	{
 		delete connection;
+		delete connection_log;
 	}
 
 	void process() override
@@ -42,6 +46,7 @@ public:
 		{
 			SharedObject message = SharedObject::deserialize(connection->receiveMessage());
 			message.print();
+			to_log.push("Receive message:" + message.getPrint());
 			if (!message.GetData())
 			{
 				connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
@@ -78,6 +83,12 @@ public:
 				break;
 			}
 			connection->sendMessage(SharedObject(this_status_code, OK, response));
+		}
+
+		// send log processing
+		if (!to_log.empty() && SharedObject::GetStatusCode(connection_log->receiveMessage()) != this_status_code) {
+			connection_log->sendMessage(SharedObject(this_status_code, LOG, to_log.front()));
+			to_log.pop();
 		}
 	}
 };

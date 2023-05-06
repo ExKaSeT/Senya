@@ -13,6 +13,7 @@
 #include "../../collections/set.h"
 #include "../../data_types/contest_info.h"
 #include "../../collections/hash_set.h"
+#include "../../logger/logger.h"
 
 using namespace boost::interprocess;
 
@@ -26,19 +27,20 @@ struct Storage
 class ServerProcessor : public Processor
 {
 private:
-	// storage : clients
 	std::vector<Storage> storages;
+	std::vector<std::unique_ptr<MemoryConnection>> storages_log;
 	std::vector<std::unique_ptr<MemoryConnection>> clients;
 	int client_id = 0;
 	const int this_status_code;
 	const Connection* connection;
 	const named_mutex* connection_mutex;
+    const logger& logger_;
 
 public:
 
 	ServerProcessor(const int statusCode, const std::string& memNameForConnect,
-		const std::string& mutexNameForConnect, const std::vector<std::string>& storageMemNames)
-		: this_status_code(statusCode)
+		const std::string& mutexNameForConnect, const std::vector<std::string>& storageMemNames, logger& logger)
+		: this_status_code(statusCode), logger_(logger)
 	{
 		if (storageMemNames.empty())
 			throw std::runtime_error("1 storage minimum");
@@ -49,6 +51,10 @@ public:
 			storages.back().connection = std::make_unique<MemoryConnection>(true, storageMemName);
 			storages.back().client_requested = nullptr;
 			storages.back().clients_to_process = {};
+
+			std::string connection_log_name = storageMemName + "log";
+			clients.push_back(std::make_unique<MemoryConnection>(true, connection_log_name));
+			clients.back()->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 		}
 
 		try
@@ -58,10 +64,6 @@ public:
 		connection = new MemoryConnection(true, memNameForConnect);
 		connection_mutex = new named_mutex(create_only, mutexNameForConnect.c_str());
 
-//		std::string connection_name = "client" + std::to_string(client_id);
-//		clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
-//		clients.back()->sendMessage(SharedObject(this_status_code, OK, "null"));
-//		client_id++;
 		connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 	}
 
@@ -88,7 +90,7 @@ public:
 		for (auto it = clients.begin(); it != clients.end();)
 		{
 			MemoryConnection* client_connection = it->get();
-			if ((SharedObject::GetStatusCode(client_connection->receiveMessage()) != this_status_code))
+			if (SharedObject::GetStatusCode(client_connection->receiveMessage()) != this_status_code)
 			{
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
 				std::cout << "Client '" << client_connection->getName() << "' request ~~~~~~~";
@@ -97,17 +99,12 @@ public:
 					it = clients.erase(it);
 					continue;
 				}
-//				if (!message.GetData())
-//				{
-//					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
-//					return;
-//				}
 				auto data = message.GetData().value();
 				switch (message.GetRequestResponseCode())
 				{
 				case LOG:
 				{
-					std::cout << "LOG: " << data << std::endl;
+                    logger_.log("[" + client_connection->getName() + "] " + data, logger::severity::trace);
 					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 					break;
 				}
@@ -149,6 +146,18 @@ public:
 				storage.client_requested = nullptr;
 			}
 		}
+
+        for (auto& storage_log : storages_log)
+        {
+            if (SharedObject::GetStatusCode(storage_log->receiveMessage()) == this_status_code)
+            {
+                continue;
+            }
+            SharedObject message = SharedObject::deserialize(storage_log->receiveMessage());
+            auto data = message.GetData().value();
+            logger_.log("[" + storage_log->getName() + "] " + data, logger::severity::trace);
+            storage_log->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
+        }
 	}
 };
 

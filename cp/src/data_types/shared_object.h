@@ -19,6 +19,12 @@ request_code:
 response_code:
  20 - ok
  ?
+------------------
+ Все соединения ч/з разделяемую память односторонние, т.е. кто-то один только запрашивает,
+ а другой только отвечает:
+ клиенты -> сервер
+ сервер -> хранилища
+ хранилища_лог -> сервер
  */
 
 enum RequestResponseCode {
@@ -100,6 +106,12 @@ public:
 
 	void print() {
 		std::cout << "\nStatus code: " << status_code << "\nReqRes code: " << request_response_code << "\nData: " << data << std::endl;
+	}
+
+	std::string getPrint() {
+		std::stringstream ss;
+		ss << "\nStatus code: " << status_code << "\nReqRes code: " << request_response_code << "\nData: " << data << std::endl;
+		return ss.str();
 	}
 };
 
