@@ -27,6 +27,11 @@ response_code:
  хранилища_лог -> сервер
  */
 
+// TODO: SharedObj: int size, int status, int reqrescode, data
+// TODO: Create obj Request?
+// TODO: StringPool?
+// TODO: delete connection.h?
+
 enum RequestResponseCode {
 	ADD = 10,
 	CONTAINS = 11,
