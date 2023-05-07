@@ -7,9 +7,11 @@
 
 class memory_2 : public memory
 {
-public:
+private:
 
 	const logger* logger;
+
+public:
 
 	virtual void* allocate(size_t target_size) const override;
 
@@ -19,7 +21,7 @@ public:
 
 	memory_2& operator=(memory_2 const&) = delete;
 
-	memory_2();
+	memory_2(class logger* logger);
 
 	~memory_2() override;
 };

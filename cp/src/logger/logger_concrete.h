@@ -32,6 +32,10 @@ public:
 
 	logger_concrete& operator=(logger_concrete const&) = delete;
 
+    logger_concrete(logger_concrete&&) = delete;
+
+    logger_concrete& operator=(logger_concrete&&) = delete;
+
 	~logger_concrete() override;
 
 public:
