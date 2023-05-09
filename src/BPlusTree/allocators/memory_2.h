@@ -2,8 +2,8 @@
 #define MAIN_C_SRC_MEMORY_2_H
 
 #include "memory.h"
-#include "logger/logger.h"
-#include "logger/logger_builder.h"
+#include "../logger/logger.h"
+#include "../logger/logger_builder.h"
 
 class Memory_2 : public Memory
 {
