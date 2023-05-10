@@ -19,6 +19,12 @@ private:
 	{}
 	~SortedArray() = default;
 
+public:
+	SortedArray(const SortedArray&) = delete;
+	SortedArray& operator=(const SortedArray&) = delete;
+	SortedArray(SortedArray&&) = delete;
+	SortedArray& operator=(SortedArray&&) = delete;
+
 	// return: elem was found, index: found or to insert
 	bool binarySearch(int& index, const T& elem)
 	{
@@ -60,11 +66,6 @@ private:
 		index = low;
 		return false;
 	}
-public:
-	SortedArray(const SortedArray&) = delete;
-	SortedArray& operator=(const SortedArray&) = delete;
-	SortedArray(SortedArray&&) = delete;
-	SortedArray& operator=(SortedArray&&) = delete;
 
 	static inline SortedArray<T>* create(int capacity, const std::shared_ptr<Memory>& alloc,
 		std::function<int (const T&, const T&)> comparator)
@@ -90,21 +91,21 @@ public:
 		return data[index];
 	}
 
-	bool add(T& elem)
+	// return: -1 if elem exists or index of elem
+	int add(T& elem)
 	{
 		if (size == capacity)
 			throw std::runtime_error("Array is full");
 		int insertIndex;
 		if (binarySearch(insertIndex, elem))
 		{
-			return false; // elem already exists
+			return -1; // elem already exists
 		}
 		if (insertIndex != size)
 			memmove(data + insertIndex + 1, data + insertIndex, sizeof(T) * (size - insertIndex));
 		data[insertIndex] = elem;
 		size++;
-//		std::cout << "CMP: " << compare(1, 10) << " " << compare (10, 1) << std::endl;
-		return true;
+		return insertIndex;
 	}
 
 	void remove(int index)
@@ -156,6 +157,11 @@ public:
 	bool isFull() const
 	{
 		return size == capacity;
+	}
+
+	bool isEmpty() const
+	{
+		return size == 0;
 	}
 };
 
