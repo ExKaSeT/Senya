@@ -130,6 +130,7 @@ public:
 	{
 		init();
 	}
+
 private:
 	// returns new node (with more elem if size is even)
 	Node* splitLeafNode(Node*& toSplit, Entry*& add)
@@ -137,18 +138,70 @@ private:
 		Node* newNode = createNode(true);
 		toSplit->right = newNode;
 		newNode->left = toSplit;
+		newNode->parent = toSplit->parent;
+		int insertIndex;
+		if (toSplit->entries->binarySearch(insertIndex, add))
+			throw std::runtime_error("Unexpected");
 		int countElemToKeep = (toSplit->entries->getSize() + 1) / 2; // 5 => 3 оставляем
-		for (int x = countElemToKeep; x < toSplit->entries->getSize(); x++)
+		int moveIndex;
+		if (insertIndex < countElemToKeep)
 		{
-			newNode->entries->add(toSplit->entries->get(x));
+			moveIndex = countElemToKeep - 1;
 		}
-		for (int x = countElemToKeep; x < toSplit->entries->getSize(); x++)
+		else
 		{
-			toSplit->entries->remove(countElemToKeep);
+			moveIndex = countElemToKeep;
 		}
-		newNode->entries->add(add);
+		const int size = toSplit->entries->getSize();
+		for (int x = moveIndex; x < size; x++)
+		{
+			newNode->entries->add(toSplit->entries->get(moveIndex));
+			toSplit->entries->remove(moveIndex);
+		}
+		if (insertIndex < countElemToKeep)
+		{
+			toSplit->entries->add(add);
+		}
+		else
+		{
+			newNode->entries->add(add);
+		}
 		return newNode;
 	}
+
+	// changes key of min elem in parent
+	void leafNodeChangedMinElem(Node* leafNode, Entry* newMin, Entry* prevMin)
+	{
+		if (!leafNode)
+			throw std::runtime_error("Incorrect args");
+		Node* current = leafNode;
+		Node* child;
+		while (current->parent != nullptr)
+		{
+			child = current;
+			current = current->parent;
+			if (current->children[0] != child)
+				break;
+		}
+		if (current->parent == nullptr && current->children[0] == child)
+		{
+			return; // the smallest key in the tree isn`t stored
+		}
+		int index;
+		bool isFound = current->entries->binarySearch(index, prevMin);
+		if (!isFound)
+			throw std::runtime_error("Unexpected");
+		Entry* keyToRemove = current->entries->get(index);
+		current->entries->remove(index);
+		destroyEntry(keyToRemove);
+		current->entries->add(createEntry(*(newMin->key)));
+	}
+
+//	Node* findLeaf(const K& key)
+//	{
+//		Node *current = root;
+//
+//	}
 
 public:
 	bool add(const K& key, const V& value)
@@ -194,7 +247,7 @@ public:
 			// index to insert new val == needed index of children
 			current = current->children[indexToInsert];
 		}
-		if (current->entries->contains(data))
+		if (current->entries->contains(data) >= 0)
 		{
 			destroyEntry(data);
 			return false;
@@ -202,9 +255,9 @@ public:
 		if (!current->entries->isFull())
 		{
 			int index = current->entries->add(data);
-			if (index == 0) // so need to change key in some parent
+			if (index == 0) // so need to change key in some parent (maybe)
 			{
-				// TODO: change key
+				leafNodeChangedMinElem(current, data, current->entries->get(1));
 			}
 			size++;
 			return true;
@@ -212,6 +265,49 @@ public:
 		// current leaf is full...
 		// TODO: checks...
 		return true;
+	}
+
+	void print()
+	{
+		printRec(root);
+	}
+
+private:
+	void printRec(Node* node, int depth = 0)
+	{
+		if (node == nullptr)
+		{
+			return;
+		}
+
+		std::cout << std::string(depth, '\t');
+
+		if (node->isLeaf())
+		{
+			// Если узел является листом, то выводим его ключи
+			for (int i = 0; i < node->entries->getSize(); i++)
+			{
+				std::cout << *(node->entries->get(i)->key) << " ";
+			}
+			std::cout << std::endl;
+		}
+		else
+		{
+			// Если узел не является листом, то выводим его ключи и рекурсивно вызываем функцию для каждого дочернего узла
+			for (int i = 0; i < node->entries->getSize(); i++)
+			{
+				std::cout << *(node->entries->get(i)->key) << " ";
+			}
+			std::cout << std::endl;
+
+			for (int i = 0; i < node->entries->getSize(); i++)
+			{
+				printRec(node->children[i], depth + 1);
+			}
+
+			// Рекурсивный вызов для крайнего правого дочернего узла
+			printRec(node->children[node->entries->getSize()], depth + 1);
+		}
 	}
 };
 

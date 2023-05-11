@@ -92,7 +92,7 @@ public:
 	}
 
 	// return: -1 if elem exists or index of elem
-	int add(T& elem)
+	int add(const T& elem)
 	{
 		if (size == capacity)
 			throw std::runtime_error("Array is full");

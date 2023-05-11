@@ -13,7 +13,14 @@ int main()
 	logger_builder *loggerBuilder = new logger_builder_concrete();
 	logger *logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 	std::function<int(const int&, const int&)> myFunction = cmp;
-	BPlusTreeMap<int, int> map(2, 10, cmp, std::make_shared<Memory_2>(logger));
+	BPlusTreeMap<int, int> map(2, 4, cmp, std::make_shared<Memory_2>());
+	for (int x = 15; x > 0; x -= 2) {
+		map.add(x, x);
+		map.print();
+	}
+
+
+	map.print();
 //	SortedArray<int> *arr = SortedArray<int>::create(20,
 //		std::make_shared<Memory_2>(), [](const int& a,  const int& b) {return a - b;});
 //	for (int x = 0; x < 20; x += 2) {
