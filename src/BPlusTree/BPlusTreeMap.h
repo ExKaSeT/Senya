@@ -132,7 +132,7 @@ public:
 	}
 
 private:
-	// returns new node (with more elem if size is even)
+	// returns new node (with more elem if size is even) (add != const)
 	Node* splitLeafNode(Node*& toSplit, Entry*& add)
 	{
 		Node* newNode = createNode(true);
@@ -169,7 +169,7 @@ private:
 		return newNode;
 	}
 
-	// changes key of min elem in parent
+	// changes key of min elem in parent (const Entries)
 	void leafNodeChangedMinElem(Node* leafNode, Entry* newMin, Entry* prevMin)
 	{
 		if (!leafNode)
@@ -255,15 +255,50 @@ public:
 		if (!current->entries->isFull())
 		{
 			int index = current->entries->add(data);
-			if (index == 0) // so need to change key in some parent (maybe)
+			if (index == 0)
 			{
 				leafNodeChangedMinElem(current, data, current->entries->get(1));
 			}
 			size++;
 			return true;
 		}
-		// current leaf is full...
-		// TODO: checks...
+		// try to give elem to the left sibling
+		if (!current->left->entries->isFull())
+		{
+			Entry* toMove = current->entries->get(0);
+			current->entries->remove(0);
+			current->entries->add(data);
+			current->left->entries->add(toMove);
+			leafNodeChangedMinElem(current, current->entries->get(0), toMove);
+			size++;
+			return true;
+		}
+		// try to give elem to the right sibling
+		if (!current->right->entries->isFull())
+		{
+			// largest value may be data
+			Entry* last = current->entries->get(current->entries->getSize() - 1);
+			int cmp = compare(*(data->key), *(last->key));
+			if (cmp < 0) // data less than last
+			{
+				current->entries->remove(current->entries->getSize() - 1);
+				current->entries->add(data);
+				current->right->entries->add(last);
+				leafNodeChangedMinElem(current->right, last, current->right->entries->get(1));
+			}
+			else if (cmp > 0)
+			{
+				current->right->entries->add(data);
+				leafNodeChangedMinElem(current->right, data, current->right->entries->get(1));
+			}
+			else
+			{
+				throw std::runtime_error("Unexpected");
+			}
+			size++;
+			return true;
+		}
+		// TODO: test siblings exchange
 		return true;
 	}
 
