@@ -18,10 +18,10 @@ int main()
 		map.add(x, x);
 		map.print();
 	}
-	map.add(0, 0);
-	map.add(2, 2);
-	map.add(12, 12);
-	map.add(12, 16);
+	map.add(16, 0);
+	map.add(17, 2);
+	map.print();
+	map.add(18, 12);
 	map.print();
 //	SortedArray<int> *arr = SortedArray<int>::create(20,
 //		std::make_shared<Memory_2>(), [](const int& a,  const int& b) {return a - b;});

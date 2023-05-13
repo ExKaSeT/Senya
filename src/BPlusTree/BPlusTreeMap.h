@@ -263,7 +263,7 @@ public:
 			return true;
 		}
 		// try to give elem to the left sibling
-		if (!current->left->entries->isFull())
+		if (current->left != nullptr && !current->left->entries->isFull())
 		{
 			Entry* toMove = current->entries->get(0);
 			current->entries->remove(0);
@@ -274,7 +274,7 @@ public:
 			return true;
 		}
 		// try to give elem to the right sibling
-		if (!current->right->entries->isFull())
+		if (current->right != nullptr && !current->right->entries->isFull())
 		{
 			// largest value may be data
 			Entry* last = current->entries->get(current->entries->getSize() - 1);
