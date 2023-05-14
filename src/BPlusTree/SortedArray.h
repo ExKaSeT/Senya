@@ -11,12 +11,13 @@ private:
 	T* data;
 	const int capacity = 0;
 	int size = 0;
-	const std::function<int (const T&, const T&)> compare;
+	const std::function<int(const T&, const T&)> compare;
 	const std::shared_ptr<Memory> alloc;
 
-	SortedArray(int capacity, const std::function<int (const T&, const T&)>& comparator,
+	SortedArray(int capacity, const std::function<int(const T&, const T&)>& comparator,
 		const std::shared_ptr<Memory>& alloc) : compare(comparator), alloc(alloc), capacity(capacity)
-	{}
+	{
+	}
 	~SortedArray() = default;
 
 public:
@@ -68,12 +69,12 @@ public:
 	}
 
 	static inline SortedArray<T>* create(int capacity, const std::shared_ptr<Memory>& alloc,
-		std::function<int (const T&, const T&)> comparator)
+		std::function<int(const T&, const T&)> comparator)
 	{
 		if (capacity < 1)
 			throw std::runtime_error("Capacity must be > 0");
 		auto* array = reinterpret_cast<SortedArray<T>*>(alloc->allocate(sizeof(SortedArray<T>)));
-		new (array) SortedArray<T>(capacity, comparator, alloc);
+		new(array) SortedArray<T>(capacity, comparator, alloc);
 		array->data = reinterpret_cast<T*>(alloc->allocate(sizeof(T) * capacity));
 		return array;
 	}
@@ -82,6 +83,11 @@ public:
 	{
 		alloc->deallocate(data);
 		alloc->deallocate(this);
+	}
+
+	void clear()
+	{
+		size = 0;
 	}
 
 	T get(int index) const
