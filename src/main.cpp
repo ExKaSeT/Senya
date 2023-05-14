@@ -20,9 +20,20 @@ int main()
 	}
 	map.add(16, 0);
 	map.add(17, 2);
-	map.print();
 	map.add(18, 12);
 	map.print();
+	map.add(19, 12);
+	map.print();
+	map.add(20, 12);
+	map.print();
+	map.add(21, 12);
+	map.print();
+	map.add(22, 12);
+	map.print();
+	map.add(23, 12);
+	map.print();
+//	map.add(21, 12);
+//	map.print();
 //	SortedArray<int> *arr = SortedArray<int>::create(20,
 //		std::make_shared<Memory_2>(), [](const int& a,  const int& b) {return a - b;});
 //	for (int x = 0; x < 20; x += 2) {

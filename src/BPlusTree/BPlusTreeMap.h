@@ -289,6 +289,18 @@ private:
 			return true;
 		}
 		Node* newNode = splitInternalNode(internal, add);
+		if (internal == root)
+		{
+			Node* right = newNode;
+			Node* left = internal;
+			root = createNode(false);
+			right->parent = root;
+			left->parent = root;
+			root->children[0] = left;
+			root->children[1] = right;
+			root->entries->add(createEntry(*(findMinEntry(right)->key)));
+			return true;
+		}
 		return addKeyToInternalRec(internal->parent, newNode);
 	}
 
