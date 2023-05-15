@@ -14,24 +14,28 @@ int main()
 	logger *logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 	std::function<int(const int&, const int&)> myFunction = cmp;
 	BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<Memory_2>());
-	for (int x = 15; x > 6; x -= 2) {
+	for (int x = 0; x < 36; x += 3) {
 		map.add(x, x);
 		map.print();
 	}
-	map.add(16, 0);
-	map.add(17, 2);
-	map.add(18, 12);
-	map.print();
-	map.add(19, 12);
-	map.print();
-	map.add(20, 12);
-	map.print();
-	map.add(21, 12);
-	map.print();
-	map.add(22, 12);
-	map.print();
-	map.add(23, 12);
-	map.print();
+	map.add(39, 39);
+//	map.add(42, 42);
+//	map.add(16, 0);
+//	map.add(17, 2);
+//	map.add(18, 12);
+//	map.print();
+//	map.add(19, 12);
+//	map.print();
+//	map.add(20, 12);
+//	map.print();
+//	map.add(21, 12);
+//	map.print();
+//	map.add(22, 12);
+//	map.print();
+//	map.add(23, 12);
+//	map.print();
+//	map.add(19, 12);
+//	map.print();
 //	map.add(21, 12);
 //	map.print();
 //	SortedArray<int> *arr = SortedArray<int>::create(20,

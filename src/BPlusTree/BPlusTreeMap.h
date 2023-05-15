@@ -139,6 +139,8 @@ private:
 		newNode->left = toSplit;
 		newNode->right = toSplit->right;
 		newNode->parent = toSplit->parent;
+		if (toSplit->right != nullptr)
+			toSplit->right->left = newNode;
 		toSplit->right = newNode;
 		int insertIndex;
 		if (toSplit->entries->binarySearch(insertIndex, add))
@@ -187,6 +189,8 @@ private:
 		newNode->left = toSplit;
 		newNode->right = toSplit->right;
 		newNode->parent = toSplit->parent;
+		if (toSplit->right != nullptr)
+			toSplit->right->left = newNode;
 		toSplit->right = newNode;
 		struct NodeAndMin
 		{
@@ -211,11 +215,13 @@ private:
 			toSplit->children[x] = arr->get(x).node;
 		}
 		newNode->children[0] = arr->get(mid).node;
+		newNode->children[0]->parent = newNode;
 		int childIndex = 1;
 		for (int x = mid + 1; x < arr->getSize(); x++)
 		{
 			newNode->entries->add(arr->get(x).min);
 			newNode->children[childIndex] = arr->get(x).node;
+			newNode->children[childIndex]->parent = newNode;
 			childIndex++;
 		}
 		destroyEntry(arr->get(0).min);
@@ -266,6 +272,7 @@ private:
 			memmove(internal->children + insertIndex + 1, internal->children + insertIndex,
 				sizeof(*(internal->children)) * (internal->entries->getSize() - insertIndex));
 			internal->children[insertIndex] = add;
+			add->parent = internal;
 			return true;
 		}
 		if (internal->left != nullptr && !internal->left->entries->isFull())
@@ -274,6 +281,7 @@ private:
 			if (insertIndex != internal->left->entries->getSize() - 1)
 				throw std::runtime_error("Unexpected");
 			internal->left->children[insertIndex + 1] = add;
+			add->parent = internal->left;
 			return true;
 		}
 		if (internal->right != nullptr && !internal->right->entries->isFull())
@@ -286,6 +294,7 @@ private:
 			memmove(internal->right->children + 1, internal->right->children,
 				sizeof(*(internal->children)) * (internal->right->entries->getSize() + 1));
 			internal->right->children[0] = add;
+			add->parent = internal->right;
 			return true;
 		}
 		Node* newNode = splitInternalNode(internal, add);
