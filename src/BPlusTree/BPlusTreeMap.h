@@ -340,7 +340,7 @@ private:
 				if (insertIndex != 0)
 					throw std::runtime_error("Unexpected");
 				memmove(internal->right->children + 1, internal->right->children,
-						sizeof(*(internal->children)) * (internal->right->entries->getSize() + 1));
+						sizeof(*(internal->children)) * internal->right->entries->getSize());
 				internal->right->children[0] = add;
 				add->parent = internal->right;
 				return true;
@@ -354,12 +354,30 @@ private:
 			if (insertIndex != 0)
 				throw std::runtime_error("Unexpected");
 			memmove(internal->right->children + 1, internal->right->children,
-					sizeof(*(internal->children)) * (internal->right->entries->getSize() + 1));
+					sizeof(*(internal->children)) * internal->right->entries->getSize());
 			int indexOfLastChild = internal->entries->getSize();
 			internal->right->children[0] = internal->children[indexOfLastChild];
 			internal->right->children[0]->parent = internal->right;
-			internal->children[indexOfLastChild] = add;
+
 			add->parent = internal;
+			internal->entries->remove(internal->entries->getSize() - 1);
+			destroyEntry(minInLastChild);
+			if (internal->entries->binarySearch(insertIndex, min))
+				throw std::runtime_error("Unexpected");
+			if (insertIndex == internal->entries->getSize())
+			{
+				internal->children[indexOfLastChild] = add;
+				if (internal->entries->add(createEntry(*(min->key))) != indexOfLastChild - 1)
+					throw std::runtime_error("Unexpected");
+				return true;
+			}
+			if (compare(*(min->key), *(findMinEntry(internal->children[0])->key)) < 1)
+				throw std::runtime_error("Unexpected");
+			memmove(internal->children + insertIndex + 2, internal->children + insertIndex + 1,
+					internal->entries->getSize() + 1);
+			internal->children[insertIndex + 1] = add;
+			if (internal->entries->add(createEntry(*(min->key))) != insertIndex)
+				throw std::runtime_error("Unexpected");
 			return true;
 		}
 		Node* newNode = splitInternalNode(internal, add);

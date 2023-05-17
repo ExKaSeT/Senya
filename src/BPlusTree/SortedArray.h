@@ -93,7 +93,7 @@ public:
 	T get(int index) const
 	{
 		if (index < 0 || index >= size)
-			throw std::runtime_error("Incorrect index");
+			throw std::runtime_error("SortedArray:get: Incorrect index");
 		return data[index];
 	}
 
@@ -117,7 +117,7 @@ public:
 	void remove(int index)
 	{
 		if (index < 0 || index >= size)
-			throw std::runtime_error("Incorrect index");
+			throw std::runtime_error("SortedArray:remove: Incorrect index");
 		if (index != size - 1)
 		{
 			memmove(data + index, data + index + 1, sizeof(T) * (size - index - 1));
