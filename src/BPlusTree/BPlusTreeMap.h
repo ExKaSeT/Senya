@@ -8,6 +8,7 @@
 #include "allocators/memory_2.h"
 #include "SortedArray.h"
 
+
 template<typename K, typename V>
 class BPlusTreeMap
 {
@@ -80,14 +81,14 @@ private:
 		if (isLeaf)
 		{
 			node->entries = SortedArray<Entry*>::create(leafCapacity, alloc,
-				[this](Entry* const& a, Entry* const& b) -> int
-				{ return compare(*(a->key), *(b->key)); });
+					[this](Entry* const& a, Entry* const& b) -> int
+					{ return compare(*(a->key), *(b->key)); });
 		}
 		else
 		{
 			node->entries = SortedArray<Entry*>::create(maxKeysCount, alloc,
-				[this](Entry* const& a, Entry* const& b) -> int
-				{ return compare(*(a->key), *(b->key)); });
+					[this](Entry* const& a, Entry* const& b) -> int
+					{ return compare(*(a->key), *(b->key)); });
 			node->children = reinterpret_cast<Node**>(alloc->allocate(sizeof(Node*) * maxChildCount));
 			for (int x = 0; x < maxChildCount; x++)
 				node->children[x] = nullptr;
@@ -119,21 +120,22 @@ private:
 
 public:
 	explicit BPlusTreeMap(int degree, int leafCapacity, const std::function<int(const K&, const K&)>& comparator,
-		const std::shared_ptr<Memory>& alloc) : degree(degree), compare(comparator), alloc(alloc),
-												leafCapacity(leafCapacity)
+			const std::shared_ptr<Memory>& alloc) : degree(degree), compare(comparator), alloc(alloc),
+													leafCapacity(leafCapacity)
 	{
 		init();
 	}
+
 	explicit BPlusTreeMap(const int degree, int leafCapacity,
-		const std::function<int(const K&, const K&)>& comparator) :
-		degree(degree), alloc(std::make_shared<Memory_2>()), compare(comparator), leafCapacity(leafCapacity)
+			const std::function<int(const K&, const K&)>& comparator) :
+			degree(degree), alloc(std::make_shared<Memory_2>()), compare(comparator), leafCapacity(leafCapacity)
 	{
 		init();
 	}
 
 private:
 	// returns new node (with more elem if size is even) (add != const)
-	Node* splitLeafNode(Node*& toSplit, Entry*& add)
+	Node* splitLeafNode(Node* toSplit, Entry* add)
 	{
 		Node* newNode = createNode(true);
 		newNode->left = toSplit;
@@ -183,7 +185,7 @@ private:
 	}
 
 	// returns new node (with more elem if size is even) (add != const)
-	Node* splitInternalNode(Node*& toSplit, Node*& add)
+	Node* splitInternalNode(Node* toSplit, Node* add)
 	{
 		Node* newNode = createNode(false);
 		newNode->left = toSplit;
@@ -192,14 +194,23 @@ private:
 		if (toSplit->right != nullptr)
 			toSplit->right->left = newNode;
 		toSplit->right = newNode;
+
+//        newNode->children[0] = toSplit->children[2];
+//        newNode->children[1] = add;
+//        for (int x = 0; x < 2; x++) {
+//            newNode->children[0]->parent = newNode;
+//        }
+//        toSplit->entries->remove(1);
+//        newNode->entries->add(createEntry(*(findMinEntry(add)->key)));
+
 		struct NodeAndMin
 		{
 			Node* node;
 			Entry* min;
 		};
 		SortedArray<NodeAndMin>* arr = SortedArray<NodeAndMin>::create(toSplit->entries->getSize() + 2, alloc,
-			[this](NodeAndMin const& a, NodeAndMin const& b) -> int
-			{ return compare(*(a.min->key), *(b.min->key)); });
+				[this](NodeAndMin const& a, NodeAndMin const& b) -> int
+				{ return compare(*(a.min->key), *(b.min->key)); });
 		arr->add({ toSplit->children[0], createEntry(*(findMinEntry(toSplit->children[0])->key)) });
 		arr->add({ add, createEntry(*(findMinEntry(add)->key)) });
 		for (int x = 0; x < toSplit->entries->getSize(); x++)
@@ -256,7 +267,7 @@ private:
 		current->entries->add(createEntry(*(newMin->key)));
 	}
 
-	bool addKeyToInternalRec(Node*& internal, Node*& add)
+	bool addKeyToInternalRec(Node* internal, Node* add)
 	{
 		if (internal->isLeaf())
 			throw std::runtime_error("Unexpected");
@@ -270,31 +281,85 @@ private:
 				throw std::runtime_error("Unexpected");
 			insertIndex++;
 			memmove(internal->children + insertIndex + 1, internal->children + insertIndex,
-				sizeof(*(internal->children)) * (internal->entries->getSize() - insertIndex));
+					sizeof(*(internal->children)) * (internal->entries->getSize() - insertIndex));
 			internal->children[insertIndex] = add;
 			add->parent = internal;
 			return true;
 		}
 		if (internal->left != nullptr && !internal->left->entries->isFull())
 		{
-			int insertIndex = internal->left->entries->add(createEntry(*(min->key)));
+			Entry* minInFirstChild = findMinEntry(internal->children[0]);
+			int cmp = compare(*(min->key), *(minInFirstChild->key));
+			if (cmp < 0) // "add" - the lowest node
+			{
+				int insertIndex = internal->left->entries->add(createEntry(*(min->key)));
+				if (insertIndex != internal->left->entries->getSize() - 1)
+					throw std::runtime_error("Unexpected");
+				internal->left->children[insertIndex + 1] = add;
+				add->parent = internal->left;
+				return true;
+			}
+			else if (cmp == 0)
+			{
+				throw std::runtime_error("Unexpected");
+			}
+			int insertIndex = internal->left->entries->add(createEntry(*(minInFirstChild->key)));
 			if (insertIndex != internal->left->entries->getSize() - 1)
 				throw std::runtime_error("Unexpected");
-			internal->left->children[insertIndex + 1] = add;
-			add->parent = internal->left;
+			internal->left->children[insertIndex + 1] = internal->children[0];
+			internal->children[0]->parent = internal->left;
+			internal->children[0] = nullptr;
+
+			add->parent = internal;
+			if (internal->entries->binarySearch(insertIndex, min))
+				throw std::runtime_error("Unexpected");
+			if (insertIndex == 0)
+			{
+				internal->children[0] = add;
+				leafNodeChangedMinElem(internal, min, minInFirstChild);
+				return true;
+			}
+			Entry* toDel = internal->entries->get(0);
+			internal->entries->remove(0);
+			leafNodeChangedMinElem(internal, toDel, minInFirstChild);
+			destroyEntry(toDel);
+			internal->entries->add(createEntry(*(min->key)));
+			memmove(internal->children, internal->children + 1, insertIndex * sizeof(*(internal->children)));
+			internal->children[insertIndex] = add;
 			return true;
 		}
 		if (internal->right != nullptr && !internal->right->entries->isFull())
 		{
 			Entry* prevMin = findMinEntry(internal->right->children[0]);
-			leafNodeChangedMinElem(internal->right->children[0], min, prevMin);
-			int insertIndex = internal->right->entries->add(createEntry(*(min->key)));
+			Entry* minInLastChild = internal->entries->get(internal->entries->getSize() - 1);
+			int cmp = compare(*(min->key), *(minInLastChild->key));
+			if (cmp > 0) // "add" more than last child in internal
+			{
+				leafNodeChangedMinElem(internal->right->children[0], min, prevMin);
+				int insertIndex = internal->right->entries->add(createEntry(*(prevMin->key)));
+				if (insertIndex != 0)
+					throw std::runtime_error("Unexpected");
+				memmove(internal->right->children + 1, internal->right->children,
+						sizeof(*(internal->children)) * (internal->right->entries->getSize() + 1));
+				internal->right->children[0] = add;
+				add->parent = internal->right;
+				return true;
+			}
+			else if (cmp == 0)
+			{
+				throw std::runtime_error("Unexpected");
+			}
+			leafNodeChangedMinElem(internal->right->children[0], minInLastChild, prevMin);
+			int insertIndex = internal->right->entries->add(createEntry(*(prevMin->key)));
 			if (insertIndex != 0)
 				throw std::runtime_error("Unexpected");
 			memmove(internal->right->children + 1, internal->right->children,
-				sizeof(*(internal->children)) * (internal->right->entries->getSize() + 1));
-			internal->right->children[0] = add;
-			add->parent = internal->right;
+					sizeof(*(internal->children)) * (internal->right->entries->getSize() + 1));
+			int indexOfLastChild = internal->entries->getSize();
+			internal->right->children[0] = internal->children[indexOfLastChild];
+			internal->right->children[0]->parent = internal->right;
+			internal->children[indexOfLastChild] = add;
+			add->parent = internal;
 			return true;
 		}
 		Node* newNode = splitInternalNode(internal, add);
