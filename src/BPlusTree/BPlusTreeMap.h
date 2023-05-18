@@ -374,7 +374,7 @@ private:
 			if (compare(*(min->key), *(findMinEntry(internal->children[0])->key)) < 1)
 				throw std::runtime_error("Unexpected");
 			memmove(internal->children + insertIndex + 2, internal->children + insertIndex + 1,
-					internal->entries->getSize() + 1);
+					sizeof(*(internal->children)) * internal->entries->getSize());
 			internal->children[insertIndex + 1] = add;
 			if (internal->entries->add(createEntry(*(min->key))) != insertIndex)
 				throw std::runtime_error("Unexpected");
@@ -397,6 +397,22 @@ private:
 	}
 
 public:
+	void checkCorrectness()
+	{
+		Node* node = root;
+		while (!node->isLeaf())
+		{
+			node = node->children[0];
+		}
+		while (node->right != nullptr) {
+			K* minInCurrent = node->entries->get(0)->key;
+			K* minInRight = node->right->entries->get(0)->key;
+			if (compare(*minInCurrent, *minInRight) >= 0)
+				throw std::runtime_error("Check failed: Not ascending order");
+			node = node->right;
+		}
+	}
+
 	bool add(const K& key, const V& value)
 	{
 		Entry* data = createEntry(key, value);
