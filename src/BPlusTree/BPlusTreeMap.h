@@ -194,15 +194,6 @@ private:
 		if (toSplit->right != nullptr)
 			toSplit->right->left = newNode;
 		toSplit->right = newNode;
-
-//        newNode->children[0] = toSplit->children[2];
-//        newNode->children[1] = add;
-//        for (int x = 0; x < 2; x++) {
-//            newNode->children[0]->parent = newNode;
-//        }
-//        toSplit->entries->remove(1);
-//        newNode->entries->add(createEntry(*(findMinEntry(add)->key)));
-
 		struct NodeAndMin
 		{
 			Node* node;
