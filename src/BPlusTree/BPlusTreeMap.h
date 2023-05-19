@@ -15,8 +15,11 @@ class BPlusTreeMap
 private:
 	const int degree;
 	const int leafCapacity;
+	const int minLeafSize = (leafCapacity + 1) / 2;
 	const int maxChildCount = degree;
 	const int maxKeysCount = degree - 1;
+	const int minChildCount = (maxChildCount + 1) / 2;
+	const int minKeysCount = minChildCount - 1;
 	const std::shared_ptr<Memory> alloc;
 	const std::function<int(const K&, const K&)> compare;
 	int size = 0;
@@ -395,7 +398,8 @@ public:
 		{
 			node = node->children[0];
 		}
-		while (node->right != nullptr) {
+		while (node->right != nullptr)
+		{
 			K* minInCurrent = node->entries->get(0)->key;
 			K* minInRight = node->right->entries->get(0)->key;
 			if (compare(*minInCurrent, *minInRight) >= 0)
@@ -505,6 +509,61 @@ public:
 			leafNodeChangedMinElem(current, current->entries->get(0), prevSmallest);
 		}
 		return addKeyToInternalRec(current->parent, newRightNode);
+	}
+
+	bool remove(const K& key)
+	{
+		Entry* data = createEntry(key);
+
+		Node* current = root;
+		while (!current->isLeaf())
+		{
+			int index = 0;
+			bool isFound = current->entries->binarySearch(index, data);
+			if (isFound)
+			{
+				current = current->children[index + 1];
+			}
+			else
+			{
+				current = current->children[index];
+			}
+		}
+		int index = current->entries->contains();
+		destroyEntry(data);
+		if (index < 0)
+		{
+			return false;
+		}
+		data = current->entries->get(index);
+		current->entries->remove(index);
+
+		if (current == root) // root == leaf
+		{
+			destroyEntry(data);
+			size--;
+			return true;
+		}
+		if (current->entries->getSize() >= minLeafSize)
+		{
+			if (index == 0)
+			{
+				leafNodeChangedMinElem(current, current->entries->get(0), data);
+			}
+			destroyEntry(data);
+			return true;
+		}
+		if (current->left == nullptr && current->right == nullptr)
+			throw std::runtime_error("Unexpected");
+		if (current->left != nullptr)
+		{
+
+		}
+		else
+		{
+
+		}
+
 	}
 
 	void print()
