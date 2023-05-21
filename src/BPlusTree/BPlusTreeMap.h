@@ -511,6 +511,52 @@ public:
 		return addKeyToInternalRec(current->parent, newRightNode);
 	}
 
+private:
+	// min - минимальный элемент в данном поддереве, если он НЕ в этой ноде и рекурсия заканчивается,
+	// то leafNodeChangedMin()
+	void afterNodeMerge(Node* toDelete, Entry* min)
+	{
+		Node* current = toDelete->parent;
+		int childIndex = current->entries->binarySearch(childIndex, min) + 1;
+		if (current->children[childIndex] != toDelete)
+			throw std::runtime_error("Unexpected (afterNodeMerge)");
+		if (childIndex == 0 && compare(*(min->key), *(current->entries->get(0)->key)) >= 0)
+			throw std::runtime_error("Unexpected (afterNodeMerge)");
+		if (toDelete->right != nullptr)
+			toDelete->right->left = toDelete->left;
+		if (toDelete->left != nullptr)
+			toDelete->left->right = toDelete->right;
+		destroyNode(toDelete);
+		memmove(current->children + childIndex, current->children + childIndex + 1,
+				(current->entries->getSize() - childIndex) * sizeof(*(current->children)));
+		if (childIndex == 0)
+		{
+			Entry* toDel = current->entries->get(0);
+			current->entries->remove(0);
+			destroyEntry(toDel);
+		}
+		else
+		{
+			Entry* toDel = current->entries->get(childIndex - 1);
+			current->entries->remove(childIndex - 1);
+			destroyEntry(toDel);
+		}
+		if (current == root)
+		{
+			if (current->entries->isEmpty())
+			{
+				root = current->children[0];
+				destroyNode(current);
+				root->parent = nullptr;
+				if (root->left != nullptr || root->right != nullptr || root->isLeaf())
+					throw std::runtime_error("Unexpected (afterNodeMerge)");
+			}
+			return;
+		}
+		// TODO:: give left/right, merge; leafNodeChangedMin if recursion ends
+	}
+
+public:
 	bool remove(const K& key)
 	{
 		Entry* data = createEntry(key);
@@ -529,19 +575,19 @@ public:
 				current = current->children[index];
 			}
 		}
-		int index = current->entries->contains();
+		int index = current->entries->contains(data);
 		destroyEntry(data);
 		if (index < 0)
 		{
 			return false;
 		}
+		size--;
 		data = current->entries->get(index);
 		current->entries->remove(index);
 
 		if (current == root) // root == leaf
 		{
 			destroyEntry(data);
-			size--;
 			return true;
 		}
 		if (current->entries->getSize() >= minLeafSize)
@@ -557,13 +603,75 @@ public:
 			throw std::runtime_error("Unexpected");
 		if (current->left != nullptr)
 		{
-
+			Node* left = current->left;
+			// try to take elem from left
+			if (left->entries->getSize() > minLeafSize)
+			{
+				int indexOfLast = left->entries->getSize() - 1;
+				Entry* toMove = left->entries->get(indexOfLast);
+				left->entries->remove(indexOfLast);
+				if (current->entries->add(toMove) != 0)
+					throw std::runtime_error("Unexpected");
+				Entry* prevMin = index == 0 ? data : current->entries->get(1);
+				leafNodeChangedMinElem(current, toMove, prevMin);
+				destroyEntry(data);
+				return true;
+			}
+			// merge with left
+			for (int x = 0; x < current->entries->getSize(); x++)
+			{
+				left->entries->add(current->entries->get(x));
+			}
 		}
 		else
 		{
-
+			Node* right = current->right;
+			// try to take elem from right
+			if (right->entries->getSize() > minLeafSize)
+			{
+				Entry* toMove = right->entries->get(0);
+				right->entries->remove(0);
+				leafNodeChangedMinElem(right, right->entries->get(0), toMove);
+				current->entries->add(toMove);
+				destroyEntry(data);
+				return true;
+			}
+			// merge with right
+			for (int x = 0; x < current->entries->getSize(); x++)
+			{
+				right->entries->add(current->entries->get(x));
+			}
 		}
-
+		if (current->parent == root && root->entries->getSize() == 1)
+		{
+			destroyEntry(root->entries->get(0));
+			destroyNode(root);
+			if (current->left != nullptr)
+			{
+				root = current->left;
+			}
+			else
+			{
+				root = current->right;
+			}
+			destroyNode(current);
+			root->right = nullptr;
+			root->left = nullptr;
+			root->parent = nullptr;
+			if (!root->isLeaf())
+				throw std::runtime_error("Unexpected (remove)");
+			return true;
+		}
+		if (index == 0)
+		{
+			afterNodeMerge(current, data);
+		}
+		else
+		{
+			afterNodeMerge(current, current->entries->get(0));
+		}
+		destroyEntry(data);
+		return true;
 	}
 
 	void print()
