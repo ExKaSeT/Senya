@@ -517,7 +517,7 @@ private:
 	void afterNodeMerge(Node* toDelete, Entry* min)
 	{
 		Node* current = toDelete->parent;
-		int childIndex = current->entries->binarySearch(childIndex, min) + 1;
+		int childIndex = current->entries->contains(min) + 1;
 		if (current->children[childIndex] != toDelete)
 			throw std::runtime_error("Unexpected (afterNodeMerge)");
 		if (childIndex == 0 && compare(*(min->key), *(current->entries->get(0)->key)) >= 0)
@@ -541,6 +541,14 @@ private:
 			current->entries->remove(childIndex - 1);
 			destroyEntry(toDel);
 		}
+		if (current->entries->getSize() >= minKeysCount)
+		{
+			if (childIndex == 0)
+			{
+				leafNodeChangedMinElem(current, findMinEntry(current), min);
+			}
+			return;
+		}
 		if (current == root)
 		{
 			if (current->entries->isEmpty())
@@ -553,7 +561,90 @@ private:
 			}
 			return;
 		}
-		// TODO:: give left/right, merge; leafNodeChangedMin if recursion ends
+		if (current->left == nullptr && current->right == nullptr)
+			throw std::runtime_error("Unexpected (afterNodeMerge)");
+		if (current->left != nullptr)
+		{
+			Node* left = current->left;
+			// try to take child from left
+			if (left->entries->getSize() > minKeysCount)
+			{
+				int indexOfLast = left->entries->getSize() - 1;
+				Entry* toMove = left->entries->get(indexOfLast);
+				left->entries->remove(indexOfLast);
+				Entry* minInCurrent = findMinEntry(current);
+				Entry* prevMin = childIndex == 0 ? min : minInCurrent;
+				leafNodeChangedMinElem(current, toMove, prevMin);
+				destroyEntry(toMove);
+				memmove(current->children + 1, current->children,
+						(current->entries->getSize() + 1) * sizeof(*(current->children)));
+				current->children[0] = left->children[indexOfLast + 1];
+				left->children[indexOfLast + 1] = nullptr;
+				current->children[0]->parent = current;
+				current->entries->add(createEntry(*(minInCurrent->key)));
+				return;
+			}
+			// merge with left
+			int leftChildIndex = left->entries->getSize() + 1;
+			if (left->entries->add(createEntry(*(findMinEntry(current)->key))) != leftChildIndex - 1)
+				throw std::runtime_error("Unexpected (afterNodeMerge)");
+			left->children[leftChildIndex] = current->children[0];
+			left->children[leftChildIndex]->parent = left;
+			leftChildIndex++;
+			for (int x = 0; x < current->entries->getSize(); x++)
+			{
+				if (left->entries->add(current->entries->get(x)) != leftChildIndex - 1)
+					throw std::runtime_error("Unexpected (afterNodeMerge)");
+				left->children[leftChildIndex] = current->children[x + 1];
+				left->children[leftChildIndex]->parent = left;
+				leftChildIndex++;
+			}
+		}
+		else
+		{
+			Node* right = current->right;
+			// try to take child from right
+			if (right->entries->getSize() > minKeysCount)
+			{
+				Entry* rightMin = findMinEntry(right);
+				Entry* toDel = right->entries->get(0);
+				right->entries->remove(0);
+				leafNodeChangedMinElem(right, toDel, rightMin);
+				destroyEntry(toDel);
+				int indexOfChild = current->entries->add(createEntry(*(rightMin->key))) + 1;
+				if (indexOfChild != current->entries->getSize())
+					throw std::runtime_error("Unexpected (afterNodeMerge)");
+				current->children[indexOfChild] = right->children[0];
+				current->children[indexOfChild]->parent = current;
+				right->children[0] = nullptr;
+				memmove(right->children, right->children + 1,
+						(current->entries->getSize() + 1) * sizeof(*(right->children)));
+				leafNodeChangedMinElem(current, findMinEntry(current), min);
+				return;
+			}
+			// merge with right
+			Entry* minInRight = findMinEntry(right);
+			right->entries->add(createEntry(*(minInRight->key)));
+			memmove(right->children + current->entries->getSize() + 1, right->children,
+					right->entries->getSize() * sizeof(*(right->children)));
+			memcpy(right->children, current->children,
+					(current->entries->getSize() + 1) * sizeof(*(right->children)));
+			for (int x = 0; x <= current->entries->getSize(); x++)
+			{
+				right->children[x]->parent = right;
+			}
+			for (int x = 0; x < current->entries->getSize(); x++)
+			{
+				right->entries->add(current->entries->get(x));
+			}
+//			leafNodeChangedMinElem(right, findMinEntry(right), minInRight);
+		}
+		if (childIndex != 0)
+		{
+			min = findMinEntry(current);
+		}
+		afterNodeMerge(current, min);
+		//TODO:: обозначать мерж вправо как nullptr?
 	}
 
 public:
@@ -637,10 +728,12 @@ public:
 				return true;
 			}
 			// merge with right
+			Entry* minInRight = findMinEntry(right);
 			for (int x = 0; x < current->entries->getSize(); x++)
 			{
 				right->entries->add(current->entries->get(x));
 			}
+			leafNodeChangedMinElem(right, right->entries->get(0), minInRight);
 		}
 		if (current->parent == root && root->entries->getSize() == 1)
 		{

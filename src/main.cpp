@@ -5,7 +5,8 @@
 #include "../lab_5/1/src/logger_builder_concrete.h"
 #include "BPlusTree/allocators/default_memory.h"
 
-int cmp(int const &a,  int const& b) {
+int cmp(int const& a, int const& b)
+{
 	return a - b;
 }
 
@@ -15,23 +16,48 @@ int main()
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> dis(1, 1000);
 
-	logger_builder *loggerBuilder = new logger_builder_concrete();
-	logger *logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
+	logger_builder* loggerBuilder = new logger_builder_concrete();
+	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 
-	int count = 0;
-	while (true) {
-		BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
-		for (int x = 0; x < 100; x ++) {
-			int num = dis(gen);
-			std::cout << "|| ADD || " << num << std::endl;
-			map.add(num, num);
-			map.print();
-			map.checkCorrectness();
-		}
-		count++;
-		if (count % 100 == 0)
-			std::cout << count << std::endl;
+	BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
+	int arr[] = { 94, 67, 76, 5, 29, 40, 81, 17, 44, 30, 38, 10, 88, 12, 43, 53, 18, 46, 9, 2 };
+	for (int x = 0; x < 20; x++)
+	{
+		int num = arr[x];
+		map.add(num, num);
 	}
+	map.print();
+
+	int arr1[] = { 94, 67, 76, 5, 29, 40, 81, 17, 44, 88, 30, 38,   10, 46,  12, 43, 53, 18,  9, 2 };
+	for (int x = 0; x < 20; x++)
+	{
+		int num = arr1[x];
+		std::cout << "DELETE: " << num << std::endl;
+		map.remove(num);
+		map.checkCorrectness();
+		map.print();
+	}
+//	std::cout << "DELETE: 10" << std::endl;
+//	map.remove(10);
+//	map.print();
+
+
+	// ADDITION TEST:
+
+//	int count = 0;
+//	while (true) {
+//		BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
+//		for (int x = 0; x < 100; x ++) {
+//			int num = dis(gen);
+//			std::cout << "|| ADD || " << num << std::endl;
+//			map.add(num, num);
+//			map.print();
+//			map.checkCorrectness();
+//		}
+//		count++;
+//		if (count % 100 == 0)
+//			std::cout << count << std::endl;
+//	}
 
 //	BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
 //	int arr[100];
