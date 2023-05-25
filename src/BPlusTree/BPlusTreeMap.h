@@ -9,6 +9,7 @@
 #include "allocators/memory_2.h"
 #include "SortedArray.h"
 #include "allocators/default_memory.h"
+#include "../Map.h"
 
 
 class Null final
@@ -27,7 +28,7 @@ public:
 };
 
 template<typename K, typename V>
-class BPlusTreeMap
+class BPlusTreeMap : public Map<K, V>
 {
 private:
 	const int degree;
@@ -157,7 +158,7 @@ public:
 		init();
 	}
 
-	virtual ~BPlusTreeMap()
+	~BPlusTreeMap() override
 	{
 		Node* current = root;
 		bool isLeaf = false;
@@ -509,7 +510,7 @@ public:
 			throw std::runtime_error("Check failed: Incorrect structure?");
 	}
 
-	bool add(const K& key, const V& value)
+	bool add(const K& key, const V& value) override
 	{
 		Entry* data = createEntry(key, value);
 
@@ -753,7 +754,7 @@ private:
 	}
 
 public:
-	bool remove(const K& key)
+	bool remove(const K& key) override
 	{
 		Entry* data = createEntry(key);
 
@@ -881,7 +882,7 @@ public:
 		return true;
 	}
 
-	std::optional<V> get(const K& key)
+	std::optional<V> get(const K& key) override
 	{
 		if (std::is_same<V, Null>::value)
 		{
@@ -911,7 +912,7 @@ public:
 		return *(current->entries->get(index)->value);
 	}
 
-	bool set(const K& key, const V& newValue)
+	bool set(const K& key, const V& newValue) override
 	{
 		if (std::is_same<V, Null>::value)
 		{
@@ -943,7 +944,7 @@ public:
 		return true;
 	}
 
-	bool contains(const K& key)
+	bool contains(const K& key) override
 	{
 		Entry* data = createEntry(key);
 		Node* current = root;
@@ -969,12 +970,12 @@ public:
 		return true;
 	}
 
-	size_t size()
+	size_t size() override
 	{
 		return size_;
 	}
 
-	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound)
+	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound) override
 	{
 		if (compare(minBound, maxBound) > 0)
 			throw std::runtime_error("Incorrect args");
