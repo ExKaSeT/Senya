@@ -14,22 +14,22 @@ int main()
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, 10000);
+	std::uniform_int_distribution<> dis(1, 100);
 
 	logger_builder* loggerBuilder = new logger_builder_concrete();
 	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 
-while (true) {
-	BPlusTreeMap<int, int> map(5, 3, cmp, std::make_shared<DefaultMemory>());
-	int arrLen = 1000;
+	BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
+	int arrLen = 30;
 	int arr[arrLen];
 	int count = 0;
 	for (int x = 0; x < arrLen; x++)
 	{
 		int num = dis(gen);
+//		int num = rand() % 100;
 		arr[count] = num;
 		count++;
-		map.add(num, num);
+		map.add(num, Null::value());
 		map.checkCorrectness();
 	}
 //	std::cout << "___________";
@@ -37,16 +37,24 @@ while (true) {
 //		std::cout << arr[x] << ", ";
 //	}
 //	std::cout << std::endl;
-//	map.print();
-//	map.checkCorrectness();
-	for (int x = 0; x < arrLen; x++) {
-		int num = arr[x];
-//		std::cout << "DELETE: " << num << std::endl;
-		map.remove(num);
-		map.checkCorrectness();
-//		map.print();
+	map.print();
+
+	auto list = map.entrySet(10, 11);
+	for (auto it = list.begin(); it != list.end(); ++it) {
+		std::cout << (*it).first << " ";
 	}
-}
+
+
+//	for (int x = 0; x < arrLen; x++) {
+//		int num = arr[x];
+////		std::cout << "DELETE: " << num << std::endl;
+//		map.remove(num);
+//		map.checkCorrectness();
+////		map.print();
+//	}
+
+
+
 
 
 //	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
@@ -78,43 +86,9 @@ while (true) {
 //	map.print();
 
 
+
+
 	// ADDITION TEST:
-
-
-//while (true) {
-//	BPlusTreeMap<int, int> map(8, 2, cmp, std::make_shared<DefaultMemory>());
-//	int arr[100];
-//	int count = 0;
-//	for (int x = 0; x < 1000; x++) {
-//		int num = dis(gen);
-////		arr[count] = num;
-//		count++;
-////		for (int x = 0; x < count; x++)
-////			std::cout << arr[x] << ", ";
-////		std::cout << std::endl;
-//		map.add(num, num);
-//		map.checkCorrectness();
-////		map.print();
-//	}
-//}
-
-
-//	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
-//	int arr[] = {292, 138, 116, 19, 69, 93, 78, 80, 114, 241, 167, 218, 280, 213, 159, 138, 54, 53, 20, 263, 133, 123, 218, 262, 164, 247, 101, 213, 6,
-//				 6, 20, 241, 55, 55, 241, 31, 155, 6, 51, 217, 136, 298, 166, 120, 189, 47, 4, 106, 250, 182, 119, 292, 258, 250, 53, 263, 295, 166, 189, 262, 15,
-//				 4, 2, 9, 118, 39, 202, 213, 52, 15, 71, 127, 200, 111, 128, 211, 236, 222, 152, 29, 266, 50, 135, 240, 232, 84, 89, 190, 220, 271, 49, 81, 113,
-//				 248, 226, 281, 142, 59, 82, 73, 257, 47,
-//	};
-//	int arrLen = 100;
-//	for (int x = 0; x < arrLen; x++) {
-//		int num = arr[x];
-//		std::cout << "ADD " << num << std::endl;
-//		map.add(num, num);
-//		map.print();
-//	}
-
-//---------------- to delete higher
-
 
 
 //	int count = 0;

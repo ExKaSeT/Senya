@@ -5,10 +5,26 @@
 #include <memory>
 #include <functional>
 #include <set>
-#include "allocators/memory.h"
+#include <optional>
 #include "allocators/memory_2.h"
 #include "SortedArray.h"
+#include "allocators/default_memory.h"
 
+
+class Null final
+{
+private:
+	Null()
+	{
+	}
+
+public:
+	static const Null& value()
+	{
+		static Null null;
+		return null;
+	}
+};
 
 template<typename K, typename V>
 class BPlusTreeMap
@@ -23,7 +39,7 @@ private:
 	const int minKeysCount = minChildCount - 1;
 	const std::shared_ptr<Memory> alloc;
 	const std::function<int(const K&, const K&)> compare;
-	int size = 0;
+	int size_ = 0;
 
 	struct Entry
 	{
@@ -31,22 +47,26 @@ private:
 		V* value;
 	};
 
-	Entry* createEntry(const K& key, const V& value)
-	{
-		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
-		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
-		entry->value = reinterpret_cast<V*>(alloc->allocate(sizeof(V)));
-		memcpy(entry->key, &key, sizeof(K));
-		memcpy(entry->value, &value, sizeof(V));
-		return entry;
-	}
-
 	Entry* createEntry(const K& key)
 	{
 		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
 		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
 		entry->value = nullptr;
 		memcpy(entry->key, &key, sizeof(K));
+		return entry;
+	}
+
+	Entry* createEntry(const K& key, const V& value)
+	{
+		if (std::is_same<V, Null>::value)
+		{
+			return createEntry(key);
+		}
+		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
+		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
+		entry->value = reinterpret_cast<V*>(alloc->allocate(sizeof(V)));
+		memcpy(entry->key, &key, sizeof(K));
+		memcpy(entry->value, &value, sizeof(V));
 		return entry;
 	}
 
@@ -132,13 +152,52 @@ public:
 
 	explicit BPlusTreeMap(const int degree, int leafCapacity,
 			const std::function<int(const K&, const K&)>& comparator) :
-			degree(degree), alloc(std::make_shared<Memory_2>()), compare(comparator), leafCapacity(leafCapacity)
+			degree(degree), alloc(std::make_shared<DefaultMemory>()), compare(comparator), leafCapacity(leafCapacity)
 	{
 		init();
 	}
 
+	virtual ~BPlusTreeMap()
+	{
+		Node* current = root;
+		bool isLeaf = false;
+		while (true)
+		{
+			Node* toDel = current;
+			if (current->isLeaf())
+			{
+				isLeaf = true;
+			}
+			else
+			{
+				current = current->children[0];
+			}
+			while (toDel->right != nullptr)
+			{
+				Node* right = toDel->right;
+				toDel->entries->forEach([this](auto elem)
+				{ destroyEntry(elem); });
+				destroyNode(toDel);
+				toDel = right;
+			}
+			toDel->entries->forEach([this](auto elem)
+			{ destroyEntry(elem); });
+			destroyNode(toDel);
+			if (isLeaf)
+				break;
+		}
+	}
+
+	BPlusTreeMap(BPlusTreeMap const&) = delete;
+
+	BPlusTreeMap(BPlusTreeMap&&) = delete;
+
+	BPlusTreeMap operator=(BPlusTreeMap const&) = delete;
+
+	BPlusTreeMap operator=(BPlusTreeMap&&) = delete;
+
 private:
-	// returns new node (with more elem if size is even) (add != const)
+	// returns new node (with more elem if size_ is even) (add != const)
 	Node* splitLeafNode(Node* toSplit, Entry* add)
 	{
 		Node* newNode = createNode(true);
@@ -188,7 +247,7 @@ private:
 		return node->entries->get(0);
 	}
 
-	// returns new node (with more elem if size is even) (add != const)
+	// returns new node (with more elem if size_ is even) (add != const)
 	Node* splitInternalNode(Node* toSplit, Node* add)
 	{
 		Node* newNode = createNode(false);
@@ -464,7 +523,7 @@ public:
 			if (!root->entries->isFull())
 			{
 				root->entries->add(data);
-				size++;
+				size_++;
 				return true;
 			}
 			// node is full, split:
@@ -476,7 +535,7 @@ public:
 			root->children[0] = left;
 			root->children[1] = right;
 			root->entries->add(createEntry(*(right->entries->get(0)->key)));
-			size++;
+			size_++;
 			return true;
 		}
 
@@ -498,6 +557,7 @@ public:
 			destroyEntry(data);
 			return false;
 		}
+		size_++;
 		if (!current->entries->isFull())
 		{
 			int index = current->entries->add(data);
@@ -505,7 +565,6 @@ public:
 			{
 				leafNodeChangedMinElem(current, data, current->entries->get(1));
 			}
-			size++;
 			return true;
 		}
 		// try to give elem to the left sibling
@@ -516,7 +575,6 @@ public:
 			current->entries->add(data);
 			current->left->entries->add(toMove);
 			leafNodeChangedMinElem(current, current->entries->get(0), toMove);
-			size++;
 			return true;
 		}
 		// try to give elem to the right sibling
@@ -541,7 +599,6 @@ public:
 			{
 				throw std::runtime_error("Unexpected");
 			}
-			size++;
 			return true;
 		}
 		Entry* prevSmallest = current->entries->get(0);
@@ -720,7 +777,7 @@ public:
 		{
 			return false;
 		}
-		size--;
+		size_--;
 		data = current->entries->get(index);
 		current->entries->remove(index);
 
@@ -822,6 +879,158 @@ public:
 		}
 		destroyEntry(data);
 		return true;
+	}
+
+	std::optional<V> get(const K& key)
+	{
+		if (std::is_same<V, Null>::value)
+		{
+			return std::nullopt;
+		}
+		Entry* data = createEntry(key);
+		Node* current = root;
+		while (!current->isLeaf())
+		{
+			int index = 0;
+			bool isFound = current->entries->binarySearch(index, data);
+			if (isFound)
+			{
+				current = current->children[index + 1];
+			}
+			else
+			{
+				current = current->children[index];
+			}
+		}
+		int index = current->entries->contains(data);
+		destroyEntry(data);
+		if (index < 0)
+		{
+			return std::nullopt;
+		}
+		return *(current->entries->get(index)->value);
+	}
+
+	bool set(const K& key, const V& newValue)
+	{
+		if (std::is_same<V, Null>::value)
+		{
+			return false;
+		}
+		Entry* data = createEntry(key);
+		Node* current = root;
+		while (!current->isLeaf())
+		{
+			int index = 0;
+			bool isFound = current->entries->binarySearch(index, data);
+			if (isFound)
+			{
+				current = current->children[index + 1];
+			}
+			else
+			{
+				current = current->children[index];
+			}
+		}
+		int index = current->entries->contains(data);
+		destroyEntry(data);
+		if (index < 0)
+		{
+			return false;
+		}
+		data = current->entries->get(index);
+		memcpy(data->value, &newValue, sizeof(V));
+		return true;
+	}
+
+	bool contains(const K& key)
+	{
+		Entry* data = createEntry(key);
+		Node* current = root;
+		while (!current->isLeaf())
+		{
+			int index = 0;
+			bool isFound = current->entries->binarySearch(index, data);
+			if (isFound)
+			{
+				current = current->children[index + 1];
+			}
+			else
+			{
+				current = current->children[index];
+			}
+		}
+		int index = current->entries->contains(data);
+		destroyEntry(data);
+		if (index < 0)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	size_t size()
+	{
+		return size_;
+	}
+
+	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound)
+	{
+		if (compare(minBound, maxBound) > 0)
+			throw std::runtime_error("Incorrect args");
+		std::vector<std::pair<const K&, const V&>> list;
+		Entry* data = createEntry(minBound);
+		Node* current = root;
+		while (!current->isLeaf())
+		{
+			int index = 0;
+			bool isFound = current->entries->binarySearch(index, data);
+			if (isFound)
+			{
+				current = current->children[index + 1];
+			}
+			else
+			{
+				current = current->children[index];
+			}
+		}
+		int index;
+		if (current->entries->binarySearch(index, data))
+		{
+			Entry* entry = current->entries->get(index);
+			if (std::is_same<V, Null>::value)
+			{
+				list.emplace_back(*(entry->key), Null::value());
+			}
+			else
+			{
+				list.emplace_back(*(entry->key), *(entry->value));
+			}
+			index++;
+		}
+		destroyEntry(data);
+		while (true)
+		{
+			if (index >= current->entries->getSize())
+			{
+				if (current->right == nullptr)
+					return std::move(list);
+				current = current->right;
+				index = 0;
+			}
+			Entry* entry = current->entries->get(index);
+			if (compare(*(entry->key), maxBound) > 0)
+				return std::move(list);
+			if (std::is_same<V, Null>::value)
+			{
+				list.emplace_back(*(entry->key), Null::value());
+			}
+			else
+			{
+				list.emplace_back(*(entry->key), *(entry->value));
+			}
+			index++;
+		}
 	}
 
 	void print()
