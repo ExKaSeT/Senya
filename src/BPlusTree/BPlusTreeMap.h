@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <memory>
 #include <functional>
+#include <set>
 #include "allocators/memory.h"
 #include "allocators/memory_2.h"
 #include "SortedArray.h"
@@ -393,19 +394,60 @@ private:
 public:
 	void checkCorrectness()
 	{
+		if (root->isLeaf())
+			return;
+		std::set<K> leafKeys;
+		std::set<K> internalKeys;
+		int leafCount = 0;
 		Node* node = root;
+//		for (int x = 0; x < node->entries->getSize(); x++) {
+//			internalKeys.insert(*(node->entries->get(x)->key));
+//		}
 		while (!node->isLeaf())
 		{
+			Node* internal = node;
+			while (true)
+			{
+				if (internal->isLeaf())
+					throw std::runtime_error("Check failed: Internal - leaf?");
+				for (int x = 0; x < internal->entries->getSize(); x++)
+				{
+					int prevSize = internalKeys.size();
+					internalKeys.insert(*(internal->entries->get(x)->key));
+					if (internalKeys.size() == prevSize)
+						throw std::runtime_error("Check failed: Internal contains duplicate");
+				}
+				if (internal->right == nullptr)
+					break;
+				internal = internal->right;
+			}
 			node = node->children[0];
 		}
-		while (node->right != nullptr)
+		while (true)
 		{
-			K* minInCurrent = node->entries->get(0)->key;
-			K* minInRight = node->right->entries->get(0)->key;
-			if (compare(*minInCurrent, *minInRight) >= 0)
-				throw std::runtime_error("Check failed: Not ascending order");
+			leafCount++;
+			if (node->right != nullptr)
+			{
+				K* minInCurrent = node->entries->get(0)->key;
+				K* minInRight = node->right->entries->get(0)->key;
+				if (compare(*minInCurrent, *minInRight) >= 0)
+					throw std::runtime_error("Check failed: Not ascending order");
+			}
+			if (!node->isLeaf())
+				throw std::runtime_error("Check failed: Leaf not leaf?");
+			for (int x = 0; x < node->entries->getSize(); x++)
+			{
+				int prevSize = leafKeys.size();
+				leafKeys.insert(*(node->entries->get(x)->key));
+				if (leafKeys.size() == prevSize)
+					throw std::runtime_error("Check failed: Leaf contains duplicate");
+			}
+			if (node->right == nullptr)
+				break;
 			node = node->right;
 		}
+		if (leafCount != internalKeys.size() + 1)
+			throw std::runtime_error("Check failed: Incorrect structure?");
 	}
 
 	bool add(const K& key, const V& value)
@@ -628,7 +670,7 @@ private:
 				current->children[indexOfChild]->parent = current;
 				right->children[0] = nullptr;
 				memmove(right->children, right->children + 1,
-						(current->entries->getSize() + 1) * sizeof(*(right->children)));
+						(right->entries->getSize() + 1) * sizeof(*(right->children)));
 				leafNodeChangedMinElem(current, findMinEntry(current), min);
 				return;
 			}

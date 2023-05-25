@@ -14,22 +14,24 @@ int main()
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, 300);
+	std::uniform_int_distribution<> dis(1, 10000);
 
 	logger_builder* loggerBuilder = new logger_builder_concrete();
 	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 
-//	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
-//	int arrLen = 100;
-//	int arr[arrLen];
-//	int count = 0;
-//	for (int x = 0; x < arrLen; x++)
-//	{
-//		int num = dis(gen);
-//		arr[count] = num;
-//		count++;
-//		map.add(num, num);
-//	}
+while (true) {
+	BPlusTreeMap<int, int> map(5, 3, cmp, std::make_shared<DefaultMemory>());
+	int arrLen = 1000;
+	int arr[arrLen];
+	int count = 0;
+	for (int x = 0; x < arrLen; x++)
+	{
+		int num = dis(gen);
+		arr[count] = num;
+		count++;
+		map.add(num, num);
+		map.checkCorrectness();
+	}
 //	std::cout << "___________";
 //	for (int x = 0; x < arrLen; x++) {
 //		std::cout << arr[x] << ", ";
@@ -37,45 +39,43 @@ int main()
 //	std::cout << std::endl;
 //	map.print();
 //	map.checkCorrectness();
-//	for (int x = 0; x < arrLen; x++) {
+	for (int x = 0; x < arrLen; x++) {
+		int num = arr[x];
+//		std::cout << "DELETE: " << num << std::endl;
+		map.remove(num);
+		map.checkCorrectness();
+//		map.print();
+	}
+}
+
+
+//	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
+//	int arr[] = {292, 138, 116, 19, 69, 93, 78, 80, 114, 241, 167, 218, 280, 213, 159, 138, 54, 53, 20, 263, 133, 123, 218, 262, 164, 247, 101, 213, 6,
+//			6, 20, 241, 55, 55, 241, 31, 155, 6, 51, 217, 136, 298, 166, 120, 189, 47, 4, 106, 250, 182, 119, 292, 258, 250, 53, 263, 295, 166, 189, 262, 15,
+//			4, 2, 9, 118, 39, 202, 213, 52, 15, 71, 127, 200, 111, 128, 211, 236, 222, 152, 29, 266, 50, 135, 240, 232, 84, 89, 190, 220, 271, 49, 81, 113,
+//			248, 226, 281, 142, 59, 82, 73, 257, 47,
+//	};
+//	int arrLen = 100;
+//	for (int x = 0; x < arrLen; x++)
+//	{
 //		int num = arr[x];
+//		map.add(num, num);
+//	}
+//	map.print();
+//
+//	for (int x = 0; x < arrLen; x++)
+//	{
+//		int num = arr[x];
+//		if (num == 52)
+//			break;
 //		std::cout << "DELETE: " << num << std::endl;
 //		map.remove(num);
 //		map.checkCorrectness();
 //		map.print();
 //	}
+//
+//	map.remove(52);
 //	map.print();
-
-
-
-	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
-	int arr[] = {292, 138, 116, 19, 69, 93, 78, 80, 114, 241, 167, 218, 280, 213, 159, 138, 54, 53, 20, 263, 133, 123, 218, 262, 164, 247, 101, 213, 6,
-			6, 20, 241, 55, 55, 241, 31, 155, 6, 51, 217, 136, 298, 166, 120, 189, 47, 4, 106, 250, 182, 119, 292, 258, 250, 53, 263, 295, 166, 189, 262, 15,
-			4, 2, 9, 118, 39, 202, 213, 52, 15, 71, 127, 200, 111, 128, 211, 236, 222, 152, 29, 266, 50, 135, 240, 232, 84, 89, 190, 220, 271, 49, 81, 113,
-			248, 226, 281, 142, 59, 82, 73, 257, 47,
-	};
-	int arrLen = 100;
-	for (int x = 0; x < arrLen; x++)
-	{
-		int num = arr[x];
-		map.add(num, num);
-	}
-	map.print();
-
-	for (int x = 0; x < arrLen; x++)
-	{
-		int num = arr[x];
-		if (num == 52)
-			break;
-		std::cout << "DELETE: " << num << std::endl;
-		map.remove(num);
-		map.checkCorrectness();
-		map.print();
-	}
-
-	map.remove(52);
-	map.print();
-	// TODO:: 50 и 52 в разных нодах?? не смержилось нормально??
 
 
 	// ADDITION TEST:
