@@ -1,132 +1,90 @@
-#include <iostream>
-#include <random>
-#include "BPlusTree/BPlusTreeMap.h"
-#include "BPlusTree/SortedArray.h"
-#include "../lab_5/1/src/logger_builder_concrete.h"
-#include "BPlusTree/allocators/default_memory.h"
+//#include "collections/b-tree/trees/vanilla_b_plus_tree.h"
+//#include "collections/hash_set.h"
+#include "data_types/contest_info.h"
+#include "data_types/shared_object.h"
+#include "processors/processor.h"
+#include "processors/client/client_processor.h"
+#include "processors/server/server_processor.h"
+#include "processors/storage/storage_processor.h"
+#include "logger/logger_builder.h"
+#include "logger/logger_builder_concrete.h"
 
-int cmp(int const& a, int const& b)
-{
-	return a - b;
-}
+const std::string CON_MEM_NAME = "con_mem";
+const std::string CON_MUTEX_NAME = "con_mutex";
+const int SERVER_STATUS_CODE = 1;
+const int CLIENT_STATUS_CODE = 2;
+const int STORAGE_STATUS_CODE = 3;
+
 
 int main()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, 100);
-
-	logger_builder* loggerBuilder = new logger_builder_concrete();
-	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
-
-	BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
-	int arrLen = 30;
-	int arr[arrLen];
-	int count = 0;
-	for (int x = 0; x < arrLen; x++)
-	{
-		int num = dis(gen);
-//		int num = rand() % 100;
-		arr[count] = num;
-		count++;
-		map.add(num, Null::value());
-		map.checkCorrectness();
-	}
-//	std::cout << "___________";
-//	for (int x = 0; x < arrLen; x++) {
-//		std::cout << arr[x] << ", ";
-//	}
-//	std::cout << std::endl;
-	map.print();
-
-	auto list = map.entrySet(10, 11);
-	for (auto it = list.begin(); it != list.end(); ++it) {
-		std::cout << (*it).first << " ";
-	}
+	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+		991, 992, "programming_language", 993, 994, true);
+	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME);
+	clientProcessor.log("Connected");
+	clientProcessor.add(contestInfo);
+	clientProcessor.contains(contestInfo).value().print();
 
 
-//	for (int x = 0; x < arrLen; x++) {
-//		int num = arr[x];
-////		std::cout << "DELETE: " << num << std::endl;
-//		map.remove(num);
-//		map.checkCorrectness();
-////		map.print();
-//	}
+//	logger* logger = logger_builder_concrete::file_construct("log_settings.txt");
+//	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, {"storage1", "storage2"}, *logger);
+//	while (true)
+//		serverProcessor.process();
+//	delete logger;
+
+//	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage2");
+//	while (true)
+//		storageProcessor.process();
+
+
+
+//	system("chcp 1251");
+//	setbuf(stdout, 0);
+
+//	ClientConnection clientConnection(CON_MEM_NAME, CON_MUTEX_NAME);
+//	getchar();
+
+//	ServerConnection clientConnection(CON_MEM_NAME, CON_MUTEX_NAME);
+//	getchar();
 
 
 
 
 
-//	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
-//	int arr[] = {292, 138, 116, 19, 69, 93, 78, 80, 114, 241, 167, 218, 280, 213, 159, 138, 54, 53, 20, 263, 133, 123, 218, 262, 164, 247, 101, 213, 6,
-//			6, 20, 241, 55, 55, 241, 31, 155, 6, 51, 217, 136, 298, 166, 120, 189, 47, 4, 106, 250, 182, 119, 292, 258, 250, 53, 263, 295, 166, 189, 262, 15,
-//			4, 2, 9, 118, 39, 202, 213, 52, 15, 71, 127, 200, 111, 128, 211, 236, 222, 152, 29, 266, 50, 135, 240, 232, 84, 89, 190, 220, 271, 49, 81, 113,
-//			248, 226, 281, 142, 59, 82, 73, 257, 47,
-//	};
-//	int arrLen = 100;
-//	for (int x = 0; x < arrLen; x++)
-//	{
-//		int num = arr[x];
-//		map.add(num, num);
-//	}
-//	map.print();
+//	auto tree = HashSet<ContestInfo>();
+//	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+//		991, 992, "programming_language", 993, 994, true);
 //
-//	for (int x = 0; x < arrLen; x++)
-//	{
-//		int num = arr[x];
-//		if (num == 52)
-//			break;
-//		std::cout << "DELETE: " << num << std::endl;
-//		map.remove(num);
-//		map.checkCorrectness();
-//		map.print();
-//	}
+//	SharedObject sharedObject(1, 1, contestInfo.serialize());
 //
-//	map.remove(52);
-//	map.print();
+//	std::cout << sharedObject.serialize() << std::endl;
+//
+//	auto shared = SharedObject::deserialize(sharedObject.serialize().c_str());
+//	ContestInfo::deserialize(shared.GetData()).print();
+
+//	std::cout << contestInfo.getProgrammingLanguage() << "\n";
+//
+//	std::cout << contestInfo.serialize();
+//	contestInfo = ContestInfo::deserialize(contestInfo.serialize());
+//	contestInfo.print();
 
 
+//	tree.add(contestInfo);
+//	tree.add(ContestInfo::get_obj_for_search(10, 10));
+//	tree.add(ContestInfo::get_obj_for_search(11, 11));
+//	tree.add(ContestInfo::get_obj_for_search(12, 11));
+//	std::optional<ContestInfo> opt = tree.contains(ContestInfo::get_obj_for_search(99, 992));
+//
+//	std::cout << (opt ? opt.value().getCandidateId() : -1) << contestInfo.getCandidateId() << "\n\n";
+
+//	StringPool stringPool = StringPool::instance();
+//	auto ref = stringPool.get_string("KEK");
+//	auto ref1 = stringPool.get_string("KEK");
+//	stringPool.unget_string(ref);
+//	stringPool.unget_string(ref);
+//	stringPool.unget_string(ref);
+//	std::cout << ref << " ---\n";
 
 
-	// ADDITION TEST:
-
-
-//	int count = 0;
-//	while (true) {
-//		BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
-//		for (int x = 0; x < 100; x ++) {
-//			int num = dis(gen);
-//			std::cout << "|| ADD || " << num << std::endl;
-//			map.add(num, num);
-//			map.print();
-//			map.checkCorrectness();
-//		}
-//		count++;
-//		if (count % 100 == 0)
-//			std::cout << count << std::endl;
-//	}
-
-//	BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
-//	int arr[100];
-//	int count = 0;
-//	for (int x = 1000; x > 0; x -= 2) {
-//		int num = dis(gen);
-//		arr[count] = num;
-//		count++;
-//		for (int x = 0; x < count; x++)
-//			std::cout << arr[x] << ", ";
-//		std::cout << std::endl;
-//		map.add(num, num);
-//		map.print();
-//	}
-
-//	int arr[] = {94, 67, 76, 5, 29, 40, 81, 17, 44, 30, 38, 10, 88, 12, 43, 53, 18, 46, 9, 2};
-//	for (int x = 0; x < 19; x++) {
-//		int num = arr[x];
-//		map.add(num, num);
-//		map.print();
-//	}
-//	map.add(2, 2);
-//	map.print();
 	return 0;
 }
