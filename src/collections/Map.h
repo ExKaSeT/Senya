@@ -5,8 +5,10 @@
 #include <optional>
 #include <vector>
 
+
 template<typename K, typename V>
-class Map {
+class Map
+{
 public:
 
 	virtual bool add(const K& key, const V& value) = 0;
@@ -24,6 +26,22 @@ public:
 	virtual size_t size() = 0;
 
 	virtual ~Map() = default;
+};
+
+class Null final
+{
+private:
+
+	Null()
+	{
+	}
+public:
+
+	static const Null& value()
+	{
+		static Null null;
+		return null;
+	}
 };
 
 

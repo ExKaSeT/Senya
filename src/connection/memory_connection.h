@@ -1,14 +1,15 @@
-
-
 #ifndef PROGC_SRC_CONNECTION_MEMORY_CONNECTION_H
 #define PROGC_SRC_CONNECTION_MEMORY_CONNECTION_H
+
 
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include "./connection.h"
 #include "../extensions/serializable.h"
 
+
 using namespace boost::interprocess;
+
 
 class MemoryConnection : public Connection
 {
@@ -59,13 +60,15 @@ public:
 		std::string str = data.serialize();
 		const char* data_str = str.c_str();
 		char* address = static_cast<char*>(mreg->get_address());
-		std::sprintf(address + 1, data_str + 1);
+		memcpy(address + 1, data_str + 1, str.length() - 1);
 		*address = *data_str;
 	}
 
-	const std::string& getName() {
+	const std::string& getName()
+	{
 		return mem_name;
 	}
 };
+
 
 #endif //PROGC_SRC_CONNECTION_MEMORY_CONNECTION_H

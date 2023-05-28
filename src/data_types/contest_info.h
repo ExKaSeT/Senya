@@ -29,23 +29,6 @@ private:
 
 	static inline StringPool& string_pool = StringPool::instance();
 
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version)
-	{
-		ar & candidate_id;
-		ar & *last_name;
-		ar & *first_name;
-		ar & *patronymic;
-		ar & *birth_date;
-		ar & *resume_link;
-		ar & hr_manager_id;
-		ar & contest_id;
-		ar & *programming_language;
-		ar & num_tasks;
-		ar & solved_tasks;
-		ar & cheating_detected;
-	}
 public:
 
 	ContestInfo(int candidate_id,
@@ -107,14 +90,6 @@ public:
 	{
 		if (this != &other)
 		{
-
-//			string_pool.unget_string(*last_name);
-//			string_pool.unget_string(*first_name);
-//			string_pool.unget_string(*patronymic);
-//			string_pool.unget_string(*birth_date);
-//			string_pool.unget_string(*resume_link);
-//			string_pool.unget_string(*programming_language);
-
 			last_name = &string_pool.get_string(other.getLastName());
 			first_name = &string_pool.get_string(other.getFirstName());
 			patronymic = &string_pool.get_string(other.getPatronymic());
@@ -180,7 +155,7 @@ public:
 		ia >> solved_tasks;
 		ia >> cheating_detected;
 
-		return ContestInfo(candidate_id,
+		return { candidate_id,
 			last_name,
 			first_name,
 			patronymic,
@@ -191,53 +166,64 @@ public:
 			programming_language,
 			num_tasks,
 			solved_tasks,
-			cheating_detected);
+			cheating_detected };
 	}
 
 	int getCandidateId() const
 	{
 		return candidate_id;
 	}
+
 	const std::string& getLastName() const
 	{
 		return *last_name;
 	}
+
 	const std::string& getFirstName() const
 	{
 		return *first_name;
 	}
+
 	const std::string& getPatronymic() const
 	{
 		return *patronymic;
 	}
+
 	const std::string& getBirthDate() const
 	{
 		return *birth_date;
 	}
+
 	const std::string& getResumeLink() const
 	{
 		return *resume_link;
 	}
+
 	int getHrManagerId() const
 	{
 		return hr_manager_id;
 	}
+
 	int getContestId() const
 	{
 		return contest_id;
 	}
+
 	const std::string& getProgrammingLanguage() const
 	{
 		return *programming_language;
 	}
+
 	int getNumTasks() const
 	{
 		return num_tasks;
 	}
+
 	int getSolvedTasks() const
 	{
 		return solved_tasks;
 	}
+
 	bool isCheatingDetected() const
 	{
 		return cheating_detected;

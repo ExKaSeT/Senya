@@ -1,13 +1,16 @@
 #ifndef PROGC_SRC_BPLUSTREE_SORTEDARRAY_H
 #define PROGC_SRC_BPLUSTREE_SORTEDARRAY_H
 
+
 #include <stdexcept>
-#include "allocators/memory.h"
+#include "../allocators/memory.h"
+
 
 template<typename T>
 class SortedArray
 {
 private:
+
 	T* data;
 	const int capacity = 0;
 	int size = 0;
@@ -21,6 +24,7 @@ private:
 	~SortedArray() = default;
 
 public:
+
 	SortedArray(const SortedArray&) = delete;
 	SortedArray& operator=(const SortedArray&) = delete;
 	SortedArray(SortedArray&&) = delete;
@@ -170,5 +174,6 @@ public:
 		return size == 0;
 	}
 };
+
 
 #endif //PROGC_SRC_BPLUSTREE_SORTEDARRAY_H

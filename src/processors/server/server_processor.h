@@ -10,9 +10,9 @@
 #include "../../connection/memory_connection.h"
 #include "../processor.h"
 #include "../../data_types/shared_object.h"
-#include "../../collections/set.h"
 #include "../../data_types/contest_info.h"
-#include "../../collections/hash_set.h"
+#include "../../collections/Map.h"
+#include "../../collections/BPlusTree/BPlusTreeMap.h"
 #include "../../logger/logger.h"
 
 
@@ -79,7 +79,7 @@ public:
 	void process() override
 	{
 		// clients get connection
-		if ((SharedObject::GetStatusCode(connection->receiveMessage()) != this_status_code))
+		if ((SharedObject::getStatusCode(connection->receiveMessage()) != this_status_code))
 		{
 			std::string connection_name = "client" + std::to_string(client_id);
 			clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
@@ -93,17 +93,17 @@ public:
 		for (auto it = clients.begin(); it != clients.end();)
 		{
 			MemoryConnection* client_connection = it->get();
-			if (SharedObject::GetStatusCode(client_connection->receiveMessage()) != this_status_code)
+			if (SharedObject::getStatusCode(client_connection->receiveMessage()) != this_status_code)
 			{
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
 				std::cout << "Client '" << client_connection->getName() << "' request ~~~~~~~";
 				message.print();
-				if (message.GetRequestResponseCode() == CLOSE_CONNECTION) {
+				if (message.getRequestResponseCode() == CLOSE_CONNECTION) {
 					it = clients.erase(it);
 					continue;
 				}
-				auto data = message.GetData().value();
-				switch (message.GetRequestResponseCode())
+				auto data = message.getData().value();
+				switch (message.getRequestResponseCode())
 				{
 //				case LOG:
 //				{
@@ -137,8 +137,8 @@ public:
 
 			if (storage.client_requested != nullptr)
 			{
-				if (SharedObject::GetStatusCode(storage.connection->receiveMessage())
-					== SharedObject::GetStatusCode(storage.client_requested->receiveMessage()))
+				if (SharedObject::getStatusCode(storage.connection->receiveMessage())
+					== SharedObject::getStatusCode(storage.client_requested->receiveMessage()))
 				{
 					continue;
 				}
@@ -152,12 +152,12 @@ public:
 
 //        for (auto& storage_log : storages_log)
 //        {
-//            if (SharedObject::GetStatusCode(storage_log->receiveMessage()) == this_status_code)
+//            if (SharedObject::getStatusCode(storage_log->receiveMessage()) == this_status_code)
 //            {
 //                continue;
 //            }
 //            SharedObject message = SharedObject::deserialize(storage_log->receiveMessage());
-//            auto data = message.GetData().value();
+//            auto data = message.getData().value();
 //            logger_.log("[" + storage_log->getName() + "] " + data, logger::severity::trace);
 //            storage_log->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 //        }

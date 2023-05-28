@@ -60,7 +60,7 @@ int main()
 //	std::cout << sharedObject.serialize() << std::endl;
 //
 //	auto shared = SharedObject::deserialize(sharedObject.serialize().c_str());
-//	ContestInfo::deserialize(shared.GetData()).print();
+//	ContestInfo::deserialize(shared.getData()).print();
 
 //	std::cout << contestInfo.getProgrammingLanguage() << "\n";
 //

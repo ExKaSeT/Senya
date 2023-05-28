@@ -1,6 +1,6 @@
-
 #ifndef PROGC_SRC_DATA_TYPES_SHARED_OBJECT_H
 #define PROGC_SRC_DATA_TYPES_SHARED_OBJECT_H
+
 
 #include <sstream>
 #include <utility>
@@ -8,45 +8,31 @@
 #include "../extensions/serializable.h"
 
 
-
 /*
-request_code:
- 10 - add
- 11 - contains
- 12 - remove
- 13 - log
-
-response_code:
- 20 - ok
- ?
-------------------
  Все соединения ч/з разделяемую память односторонние, т.е. кто-то один только запрашивает,
  а другой только отвечает:
  клиенты -> сервер
  сервер -> хранилища
- хранилища_лог -> сервер
+ клиенты, сервер, хранилища -> лог_сервер
  */
 
-// TODO: SharedObj: int size, int status, int reqrescode, data
-// TODO: Create obj Request?
-// TODO: StringPool?
-// TODO: delete connection.h?
-
-enum RequestResponseCode {
-	ADD = 10,
-	CONTAINS = 11,
-	REMOVE = 12,
-	LOG = 13,
-	GET_CONNECTION = 14,
-	CLOSE_CONNECTION = 15,
-	OK = 20,
-};
 
 class SharedObject : public Serializable
 {
+public:
+
+	enum RequestResponseCode {
+		REQUEST = 10,
+		LOG = 13,
+		GET_CONNECTION = 14,
+		CLOSE_CONNECTION = 15,
+		OK = 20,
+		ERROR = 21,
+	};
+
 private:
 
-	char status_code; // первый байт = 0/1: обработались ли данные
+	char status_code; // первый байт - обработались ли данные
 	char request_response_code; // код запроса / ответа
 	const std::string data; // "null" - NULL
 
@@ -68,11 +54,11 @@ public:
 	}
 
 	std::string serialize() const override {
-		if (status_code == 0 || request_response_code == 0)
-			throw std::runtime_error("SharedObject cant serialize '\\0'");
 		std::stringstream ss;
 		ss << status_code;
 		ss << request_response_code;
+		size_t tmp = data.length();
+		ss << std::string(reinterpret_cast<char *>(&tmp), sizeof(tmp)) << data;
 		ss << data;
 		return ss.str();
 	}
@@ -82,10 +68,12 @@ public:
 		serializedSharedObject++;
 		char request_response_code = *serializedSharedObject;
 		serializedSharedObject++;
-		return {status_code, request_response_code, std::string(serializedSharedObject)};
+		size_t dataLen = *reinterpret_cast<const size_t *>(serializedSharedObject);
+		serializedSharedObject += sizeof(size_t);
+		return {status_code, request_response_code, std::string(serializedSharedObject, dataLen)};
 	}
 
-	static int GetStatusCode(const char* serializedSharedObject)
+	static int getStatusCode(const char* serializedSharedObject)
 	{
 		return *serializedSharedObject;
 	}
@@ -94,11 +82,13 @@ public:
 	{
 		return status_code;
 	}
-	RequestResponseCode GetRequestResponseCode() const
+
+	RequestResponseCode getRequestResponseCode() const
 	{
 		return static_cast<RequestResponseCode>(request_response_code);
 	}
-	std::optional<std::string> GetData() const
+
+	std::optional<std::string> getData() const
 	{
 		if (data == NULL_DATA)
 			return std::nullopt;
@@ -119,5 +109,6 @@ public:
 		return ss.str();
 	}
 };
+
 
 #endif //PROGC_SRC_DATA_TYPES_SHARED_OBJECT_H

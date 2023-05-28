@@ -13,21 +13,6 @@
 #include "../Map.h"
 
 
-class Null final
-{
-private:
-	Null()
-	{
-	}
-
-public:
-	static const Null& value()
-	{
-		static Null null;
-		return null;
-	}
-};
-
 template<typename K, typename V>
 class BPlusTreeMap : public Map<K, V>
 {
@@ -54,7 +39,7 @@ private:
 		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
 		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
 		entry->value = nullptr;
-		memcpy(entry->key, &key, sizeof(K));
+		*entry->key = key;
 		return entry;
 	}
 
@@ -67,8 +52,8 @@ private:
 		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
 		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
 		entry->value = reinterpret_cast<V*>(alloc->allocate(sizeof(V)));
-		memcpy(entry->key, &key, sizeof(K));
-		memcpy(entry->value, &value, sizeof(V));
+		*entry->key = key;
+		*entry->value = value;
 		return entry;
 	}
 
@@ -941,7 +926,7 @@ public:
 			return false;
 		}
 		data = current->entries->get(index);
-		memcpy(data->value, &newValue, sizeof(V));
+		*data->value = newValue;
 		return true;
 	}
 
@@ -976,64 +961,67 @@ public:
 		return size_;
 	}
 
+
 	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound) override
-	{
-		if (compare(minBound, maxBound) > 0)
-			throw std::runtime_error("Incorrect args");
-		std::vector<std::pair<const K&, const V&>> list;
-		Entry* data = createEntry(minBound);
-		Node* current = root;
-		while (!current->isLeaf())
-		{
-			int index = 0;
-			bool isFound = current->entries->binarySearch(index, data);
-			if (isFound)
-			{
-				current = current->children[index + 1];
-			}
-			else
-			{
-				current = current->children[index];
-			}
-		}
-		int index;
-		if (current->entries->binarySearch(index, data))
-		{
-			Entry* entry = current->entries->get(index);
-			if (std::is_same<V, Null>::value)
-			{
-				list.emplace_back(*(entry->key), Null::value());
-			}
-			else
-			{
-				list.emplace_back(*(entry->key), *(entry->value));
-			}
-			index++;
-		}
-		destroyEntry(data);
-		while (true)
-		{
-			if (index >= current->entries->getSize())
-			{
-				if (current->right == nullptr)
-					return std::move(list);
-				current = current->right;
-				index = 0;
-			}
-			Entry* entry = current->entries->get(index);
-			if (compare(*(entry->key), maxBound) > 0)
-				return std::move(list);
-			if (std::is_same<V, Null>::value)
-			{
-				list.emplace_back(*(entry->key), Null::value());
-			}
-			else
-			{
-				list.emplace_back(*(entry->key), *(entry->value));
-			}
-			index++;
-		}
-	}
+	{return std::vector<std::pair<const K&, const V&>>();};
+//	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound) override
+//	{
+//		if (compare(minBound, maxBound) > 0)
+//			throw std::runtime_error("Incorrect args");
+//		std::vector<std::pair<const K&, const V&>> list;
+//		Entry* data = createEntry(minBound);
+//		Node* current = root;
+//		while (!current->isLeaf())
+//		{
+//			int index = 0;
+//			bool isFound = current->entries->binarySearch(index, data);
+//			if (isFound)
+//			{
+//				current = current->children[index + 1];
+//			}
+//			else
+//			{
+//				current = current->children[index];
+//			}
+//		}
+//		int index;
+//		if (current->entries->binarySearch(index, data))
+//		{
+//			Entry* entry = current->entries->get(index);
+//			if (std::is_same<V, Null>::value)
+//			{
+//				list.emplace_back(*(entry->key), Null::value());
+//			}
+//			else
+//			{
+//				list.emplace_back(*(entry->key), *(entry->value));
+//			}
+//			index++;
+//		}
+//		destroyEntry(data);
+//		while (true)
+//		{
+//			if (index >= current->entries->getSize())
+//			{
+//				if (current->right == nullptr)
+//					return std::move(list);
+//				current = current->right;
+//				index = 0;
+//			}
+//			Entry* entry = current->entries->get(index);
+//			if (compare(*(entry->key), maxBound) > 0)
+//				return std::move(list);
+//			if (std::is_same<V, Null>::value)
+//			{
+//				list.emplace_back(*(entry->key), Null::value());
+//			}
+//			else
+//			{
+//				list.emplace_back(*(entry->key), *(entry->value));
+//			}
+//			index++;
+//		}
+//	}
 
 	void print()
 	{

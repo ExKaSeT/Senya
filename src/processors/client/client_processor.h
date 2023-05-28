@@ -9,7 +9,7 @@
 #include "../../connection/memory_connection.h"
 #include "../processor.h"
 #include "../../data_types/shared_object.h"
-#include "../../collections/set.h"
+#include "../../collections/Map.h"
 #include "../../data_types/contest_info.h"
 
 
@@ -24,7 +24,7 @@ private:
 	const Connection *connection;
 
 	void waitResponse() {
-		while (SharedObject::GetStatusCode(connection->receiveMessage()) == this_status_code) {
+		while (SharedObject::getStatusCode(connection->receiveMessage()) == this_status_code) {
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 	}
@@ -38,11 +38,11 @@ public:
 		named_mutex mutex(open_only, mutexNameForConnect.c_str());
 		scoped_lock<named_mutex> lock(mutex);
 		connect_connection.sendMessage(SharedObject(this_status_code, GET_CONNECTION, SharedObject::NULL_DATA));
-		while (SharedObject::GetStatusCode(connect_connection.receiveMessage()) == this_status_code) {
+		while (SharedObject::getStatusCode(connect_connection.receiveMessage()) == this_status_code) {
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 		auto data = SharedObject::deserialize(connect_connection.receiveMessage());
-		auto memName = data.GetData();
+		auto memName = data.getData();
 		if (!memName)
 			throw std::runtime_error("Unable to establish a connection");
 		connection = new MemoryConnection(false, memName.value());
@@ -65,7 +65,7 @@ public:
 	{
 		connection->sendMessage(SharedObject(this_status_code, CONTAINS, value));
 		waitResponse();
-		auto data = SharedObject::deserialize(connection->receiveMessage()).GetData();
+		auto data = SharedObject::deserialize(connection->receiveMessage()).getData();
 		if (!data)
 			return std::nullopt;
 		return { ContestInfo::deserialize(data.value()) };
