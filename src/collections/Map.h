@@ -11,6 +11,32 @@ class Map
 {
 public:
 
+	class Pair final
+	{
+	private:
+
+		const K* const key;
+		const V* const value;
+
+	public:
+
+		Pair(const K* key, const V* value) : key(key), value(value)
+		{
+		}
+
+		const K& getKey() const
+		{
+			return *key;
+		}
+
+		std::optional<const V&> getValue() const
+		{
+			if (value == nullptr)
+				return std::nullopt;
+			return *value;
+		}
+	};
+
 	virtual bool add(const K& key, const V& value) = 0;
 
 	virtual std::optional<V> get(const K& key) = 0;
@@ -21,7 +47,7 @@ public:
 
 	virtual bool contains(const K& key) = 0;
 
-	virtual std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound) = 0;
+	virtual std::vector<Pair> entrySet(const K& minBound, const K& maxBound) = 0;
 
 	virtual size_t size() = 0;
 

@@ -37,9 +37,10 @@ private:
 	Entry* createEntry(const K& key)
 	{
 		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
+		new (entry) Entry;
 		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
 		entry->value = nullptr;
-		*entry->key = key;
+		new (entry->key) K(key);
 		return entry;
 	}
 
@@ -50,10 +51,11 @@ private:
 			return createEntry(key);
 		}
 		auto* entry = reinterpret_cast<Entry*>(alloc->allocate(sizeof(Entry)));
+		new (entry) Entry;
 		entry->key = reinterpret_cast<K*>(alloc->allocate(sizeof(K)));
 		entry->value = reinterpret_cast<V*>(alloc->allocate(sizeof(V)));
-		*entry->key = key;
-		*entry->value = value;
+		new (entry->key) K(key);
+		new (entry->value) V(value);
 		return entry;
 	}
 
@@ -961,67 +963,50 @@ public:
 		return size_;
 	}
 
-
-	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound) override
-	{return std::vector<std::pair<const K&, const V&>>();};
-//	std::vector<std::pair<const K&, const V&>> entrySet(const K& minBound, const K& maxBound) override
-//	{
-//		if (compare(minBound, maxBound) > 0)
-//			throw std::runtime_error("Incorrect args");
-//		std::vector<std::pair<const K&, const V&>> list;
-//		Entry* data = createEntry(minBound);
-//		Node* current = root;
-//		while (!current->isLeaf())
-//		{
-//			int index = 0;
-//			bool isFound = current->entries->binarySearch(index, data);
-//			if (isFound)
-//			{
-//				current = current->children[index + 1];
-//			}
-//			else
-//			{
-//				current = current->children[index];
-//			}
-//		}
-//		int index;
-//		if (current->entries->binarySearch(index, data))
-//		{
-//			Entry* entry = current->entries->get(index);
-//			if (std::is_same<V, Null>::value)
-//			{
-//				list.emplace_back(*(entry->key), Null::value());
-//			}
-//			else
-//			{
-//				list.emplace_back(*(entry->key), *(entry->value));
-//			}
-//			index++;
-//		}
-//		destroyEntry(data);
-//		while (true)
-//		{
-//			if (index >= current->entries->getSize())
-//			{
-//				if (current->right == nullptr)
-//					return std::move(list);
-//				current = current->right;
-//				index = 0;
-//			}
-//			Entry* entry = current->entries->get(index);
-//			if (compare(*(entry->key), maxBound) > 0)
-//				return std::move(list);
-//			if (std::is_same<V, Null>::value)
-//			{
-//				list.emplace_back(*(entry->key), Null::value());
-//			}
-//			else
-//			{
-//				list.emplace_back(*(entry->key), *(entry->value));
-//			}
-//			index++;
-//		}
-//	}
+	std::vector<typename Map<K, V>::Pair> entrySet(const K& minBound, const K& maxBound) override
+	{
+		if (compare(minBound, maxBound) > 0)
+			throw std::runtime_error("Incorrect args");
+		std::vector<typename Map<K, V>::Pair> list;
+		Entry* data = createEntry(minBound);
+		Node* current = root;
+		while (!current->isLeaf())
+		{
+			int index = 0;
+			bool isFound = current->entries->binarySearch(index, data);
+			if (isFound)
+			{
+				current = current->children[index + 1];
+			}
+			else
+			{
+				current = current->children[index];
+			}
+		}
+		int index;
+		if (current->entries->binarySearch(index, data))
+		{
+			Entry* entry = current->entries->get(index);
+			list.emplace_back(entry->key, entry->value);
+			index++;
+		}
+		destroyEntry(data);
+		while (true)
+		{
+			if (index >= current->entries->getSize())
+			{
+				if (current->right == nullptr)
+					return std::move(list);
+				current = current->right;
+				index = 0;
+			}
+			Entry* entry = current->entries->get(index);
+			if (compare(*(entry->key), maxBound) > 0)
+				return std::move(list);
+			list.emplace_back(entry->key, entry->value);
+			index++;
+		}
+	}
 
 	void print()
 	{
