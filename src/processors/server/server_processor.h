@@ -10,6 +10,7 @@
 #include "../../connection/memory_connection.h"
 #include "../processor.h"
 #include "../../data_types/shared_object.h"
+#include "../../data_types/request_object.h"
 #include "../../data_types/contest_info.h"
 #include "../../collections/Map.h"
 #include "../../collections/BPlusTree/BPlusTreeMap.h"
@@ -67,7 +68,8 @@ public:
 		connection = new MemoryConnection(true, memNameForConnect);
 		connection_mutex = new named_mutex(create_only, mutexNameForConnect.c_str());
 
-		connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
+		connection->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
+				SharedObject::NULL_DATA));
 	}
 
 	~ServerProcessor()
@@ -83,9 +85,11 @@ public:
 		{
 			std::string connection_name = "client" + std::to_string(client_id);
 			clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
-			clients.back()->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
+			clients.back()->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
+					SharedObject::NULL_DATA));
 			client_id++;
-			connection->sendMessage(SharedObject(this_status_code, OK, connection_name));
+			connection->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
+					connection_name));
 			std::cout << "Create connection: " << connection_name << std::endl;
 		}
 
@@ -98,25 +102,39 @@ public:
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
 				std::cout << "Client '" << client_connection->getName() << "' request ~~~~~~~";
 				message.print();
-				if (message.getRequestResponseCode() == CLOSE_CONNECTION) {
+				if (message.getRequestResponseCode() == SharedObject::RequestResponseCode::CLOSE_CONNECTION) {
 					it = clients.erase(it);
 					continue;
 				}
-				auto data = message.getData().value();
+				auto dataOpt = message.getData();
 				switch (message.getRequestResponseCode())
 				{
+				case SharedObject::RequestResponseCode::REQUEST:
+				{
+					if (!dataOpt)
+					{
+						client_connection->sendMessage(SharedObject(this_status_code,
+								SharedObject::RequestResponseCode::ERROR, SharedObject::NULL_DATA));
+						it++;
+						continue;
+					}
+					auto contestInfo = ContestInfo::deserialize(RequestObject<ContestInfo>::deserialize(dataOpt.value()).getData());
+					auto& storage = storages.at(contestInfo.hashcode() % storages.size());
+					storage.clients_to_process.push(std::move(*it));
+					it = clients.erase(it);
+					continue;
+				}
 //				case LOG:
 //				{
 //                    logger_.log("[" + client_connection->getName() + "] " + data, logger::severity::trace);
 //					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 //					break;
 //				}
+
 				default:
 				{
-					auto& storage = storages.at(ContestInfo::deserialize(data).hashcode() % storages.size());
-					storage.clients_to_process.push(std::move(*it));
-					it = clients.erase(it);
-					continue;
+					client_connection->sendMessage(SharedObject(this_status_code,
+							SharedObject::RequestResponseCode::ERROR, SharedObject::NULL_DATA));
 				}
 				}
 //				for (auto& client : clients)

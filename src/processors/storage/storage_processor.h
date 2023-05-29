@@ -98,8 +98,9 @@ public:
 				return;
 			}
 			auto request = RequestObject<ContestInfo>::deserialize(messageData.value());
-			auto data = ContestInfo::deserialize(request.getData());
+			ContestInfo data = ContestInfo::deserialize(request.getData());
 			std::string response = SharedObject::NULL_DATA;
+
 			switch (request.getRequestCode())
 			{
 			case RequestObject<ContestInfo>::ADD:
@@ -136,21 +137,54 @@ public:
 				}
 				auto table = tableOpt.value();
 
-				if (!table->add(data, Null::value()))
-					throw std::runtime_error("Can't add value to table");
-
+				if (table->add(data, Null::value()))
+					response = "true";
+				else
+					response = "false";
 				break;
 			}
 			case RequestObject<ContestInfo>::CONTAINS:
 			{
-				auto result = set.contains(ContestInfo::deserialize(data));
-				if (result)
-					response = result.value().serialize();
+				bool contains = false;
+				auto schemas = db.get(request.getDatabase());
+				if (schemas)
+				{
+					auto tables = schemas.value()->get(request.getSchema());
+					if (tables)
+					{
+						auto table = tables.value()->get(request.getTable());
+						if (table)
+						{
+							contains = table.value()->contains(data);
+						}
+					}
+				}
+				if (contains)
+					response = "true";
+				else
+					response = "false";
 				break;
 			}
 			case RequestObject<ContestInfo>::REMOVE:
 			{
-				set.remove(ContestInfo::deserialize(data));
+				bool removed = false;
+				auto schemas = db.get(request.getDatabase());
+				if (schemas)
+				{
+					auto tables = schemas.value()->get(request.getSchema());
+					if (tables)
+					{
+						auto table = tables.value()->get(request.getTable());
+						if (table)
+						{
+							removed = table.value()->remove(data);
+						}
+					}
+				}
+				if (removed)
+					response = "true";
+				else
+					response = "false";
 				break;
 			}
 			default:
