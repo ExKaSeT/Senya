@@ -63,24 +63,22 @@ private:
 	> db;
 	const int this_status_code;
 	const Connection* connection;
-//	const Connection* connection_log;
-	std::queue<std::string> to_log;
+	const std::string connectionName;
+	ServerLogger& logger;
 
 public:
 
-	StorageProcessor(const int statusCode, const std::string& memName) : this_status_code(statusCode),
-																		 db(3, 3, stringComparer)
+	StorageProcessor(const int statusCode, const std::string& memName, ServerLogger& serverLogger)
+	: this_status_code(statusCode), db(3, 3, stringComparer), logger(serverLogger), connectionName(memName)
 	{
 		connection = new MemoryConnection(false, memName);
 		connection->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
 				SharedObject::NULL_DATA));
-//		connection_log = new MemoryConnection(false, memName + "log");
 	}
 
-	~StorageProcessor()
+	~StorageProcessor() override
 	{
 		delete connection;
-//		delete connection_log;
 	}
 
 	void process() override
@@ -88,8 +86,12 @@ public:
 		if ((SharedObject::getStatusCode(connection->receiveMessage()) != this_status_code))
 		{
 			SharedObject message = SharedObject::deserialize(connection->receiveMessage());
-			message.print();
-			to_log.push("Receive message:" + message.getPrint());
+
+			std::stringstream log;
+			log << "[" << connectionName << "] Receive:" << std::endl << message.getPrint();
+			std::cout << log.str();
+			logger.log(log.str(), logger::severity::debug);
+
 			auto messageData = message.getData();
 			if (!messageData || message.getRequestResponseCode() != SharedObject::RequestResponseCode::REQUEST)
 			{
@@ -187,6 +189,27 @@ public:
 					response = "false";
 				break;
 			}
+			case RequestObject<ContestInfo>::GET_KEY:
+			{
+				auto schemas = db.get(request.getDatabase());
+				if (schemas)
+				{
+					auto tables = schemas.value()->get(request.getSchema());
+					if (tables)
+					{
+						auto table = tables.value()->get(request.getTable());
+						if (table)
+						{
+							auto listVal = table.value()->entrySet(data, data);
+							if (listVal.size() == 1)
+							{
+								response = listVal.at(0).getKey().serialize();
+							}
+						}
+					}
+				}
+				break;
+			}
 			default:
 			{
 				connection->sendMessage(SharedObject(this_status_code,
@@ -197,11 +220,7 @@ public:
 					SharedObject::RequestResponseCode::OK, response));
 		}
 
-		// send log processing
-//		if (!to_log.empty() && SharedObject::getStatusCode(connection_log->receiveMessage()) != this_status_code) {
-//			connection_log->sendMessage(SharedObject(this_status_code, LOG, to_log.front()));
-//			to_log.pop();
-//		}
+		logger.process();
 	}
 };
 

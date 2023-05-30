@@ -231,20 +231,20 @@ public:
 
 	void print() const {
 		std::stringstream result;
-		result << "\n__________________________\n";
-		result << "Candidate ID: " << std::to_string(candidate_id) << "\n";
-		result << "Last name: " << *last_name << "\n";
-		result << "First name: " << *first_name << "\n";
-		result << "Patronymic: " << *patronymic << "\n";
-		result << "Birth date: " << *birth_date << "\n";
-		result << "Resume link: " << *resume_link << "\n";
-		result << "HR manager ID: " << std::to_string(hr_manager_id) << "\n";
-		result << "Contest ID: " << std::to_string(contest_id) << "\n";
-		result << "Programming language: " << *programming_language << "\n";
-		result << "Number of tasks: " << std::to_string(num_tasks) << "\n";
-		result << "Number of solved tasks: " << std::to_string(solved_tasks) << "\n";
-		result << "Cheating detected: " << (cheating_detected ? "true" : "false") << "\n";
-		result << "============================\n";
+		result << std::endl << "__________________________" << std::endl;
+		result << "Candidate ID: " << std::to_string(candidate_id) << std::endl;
+		result << "Last name: " << *last_name << std::endl;
+		result << "First name: " << *first_name << std::endl;
+		result << "Patronymic: " << *patronymic << std::endl;
+		result << "Birth date: " << *birth_date << std::endl;
+		result << "Resume link: " << *resume_link << std::endl;
+		result << "HR manager ID: " << std::to_string(hr_manager_id) << std::endl;
+		result << "Contest ID: " << std::to_string(contest_id) << std::endl;
+		result << "Programming language: " << *programming_language << std::endl;
+		result << "Number of tasks: " << std::to_string(num_tasks) << std::endl;
+		result << "Number of solved tasks: " << std::to_string(solved_tasks) << std::endl;
+		result << "Cheating detected: " << (cheating_detected ? "true" : "false") << std::endl;
+		result << "============================" << std::endl;
 		std::cout << result.str();
 	}
 };

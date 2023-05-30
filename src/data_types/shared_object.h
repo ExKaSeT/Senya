@@ -21,7 +21,8 @@ class SharedObject : public Serializable
 {
 public:
 
-	enum RequestResponseCode {
+	enum RequestResponseCode
+	{
 		REQUEST = 10,
 		LOG = 13,
 		GET_CONNECTION = 14,
@@ -41,36 +42,38 @@ public:
 	static inline const std::string NULL_DATA = "null";
 
 	SharedObject(int statusCode, RequestResponseCode requestResponseCode, const Serializable& data)
-		: status_code(static_cast<char>(statusCode)),
-		  request_response_code(static_cast<char>(requestResponseCode)), data(data.serialize())
+			: status_code(static_cast<char>(statusCode)),
+			  request_response_code(static_cast<char>(requestResponseCode)), data(data.serialize())
 	{
 	}
 
 	// data may be "null"
 	SharedObject(int statusCode, int requestResponseCode, const std::string& data)
-		: status_code(static_cast<char>(statusCode)),
-		  request_response_code(static_cast<char>(requestResponseCode)), data(data)
+			: status_code(static_cast<char>(statusCode)),
+			  request_response_code(static_cast<char>(requestResponseCode)), data(data)
 	{
 	}
 
-	std::string serialize() const override {
+	std::string serialize() const override
+	{
 		std::stringstream ss;
 		ss << status_code;
 		ss << request_response_code;
 		size_t tmp = data.length();
-		ss << std::string(reinterpret_cast<char *>(&tmp), sizeof(tmp)) << data;
+		ss << std::string(reinterpret_cast<char*>(&tmp), sizeof(tmp)) << data;
 		ss << data;
 		return ss.str();
 	}
 
-	static SharedObject deserialize(const char* serializedSharedObject) {
+	static SharedObject deserialize(const char* serializedSharedObject)
+	{
 		char status_code = *serializedSharedObject;
 		serializedSharedObject++;
 		char request_response_code = *serializedSharedObject;
 		serializedSharedObject++;
-		size_t dataLen = *reinterpret_cast<const size_t *>(serializedSharedObject);
+		size_t dataLen = *reinterpret_cast<const size_t*>(serializedSharedObject);
 		serializedSharedObject += sizeof(size_t);
-		return {status_code, request_response_code, std::string(serializedSharedObject, dataLen)};
+		return { status_code, request_response_code, std::string(serializedSharedObject, dataLen) };
 	}
 
 	static int getStatusCode(const char* serializedSharedObject)
@@ -95,17 +98,22 @@ public:
 		return { data };
 	}
 
-	void setStatusCode(int statusCode) {
+	void setStatusCode(int statusCode)
+	{
 		status_code = static_cast<char>(statusCode);
 	}
 
-	void print() {
-		std::cout << "\nStatus code: " << status_code << "\nReqRes code: " << request_response_code << "\nData: " << data << std::endl;
+	void print()
+	{
+		std::cout << std::endl << "Status code: " << (int)status_code << std::endl << "ReqRes code: "
+				  << (int)request_response_code << std::endl << "Data: " << data << std::endl;
 	}
 
-	std::string getPrint() {
+	std::string getPrint()
+	{
 		std::stringstream ss;
-		ss << "\nStatus code: " << status_code << "\nReqRes code: " << request_response_code << "\nData: " << data << std::endl;
+		ss << std::endl << "Status code: " << (int)status_code << std::endl << "ReqRes code: "
+		   << (int)request_response_code << std::endl << "Data: " << data << std::endl;
 		return ss.str();
 	}
 };

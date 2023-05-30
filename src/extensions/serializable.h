@@ -10,6 +10,8 @@ class Serializable
 public:
 
 	virtual std::string serialize() const = 0;
+
+	virtual ~Serializable() = default;
 };
 
 

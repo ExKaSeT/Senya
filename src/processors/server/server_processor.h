@@ -14,7 +14,6 @@
 #include "../../data_types/contest_info.h"
 #include "../../collections/Map.h"
 #include "../../collections/BPlusTree/BPlusTreeMap.h"
-#include "../../logger/logger.h"
 
 
 using namespace boost::interprocess;
@@ -27,38 +26,34 @@ struct Storage
 	std::queue<std::unique_ptr<MemoryConnection>> clients_to_process;
 };
 
-// TODO: add send log
 class ServerProcessor : public Processor
 {
 private:
 
 	std::vector<Storage> storages;
-//	std::vector<std::unique_ptr<MemoryConnection>> storages_log;
 	std::vector<std::unique_ptr<MemoryConnection>> clients;
 	int client_id = 0;
 	const int this_status_code;
 	const Connection* connection;
 	const named_mutex* connection_mutex;
+	ServerLogger& logger;
 
 public:
 
 	ServerProcessor(const int statusCode, const std::string& memNameForConnect,
-		const std::string& mutexNameForConnect, const std::vector<std::string>& storageMemNames)
-		: this_status_code(statusCode)
+			const std::string& mutexNameForConnect, const std::vector<std::string>& storageMemNames,
+			ServerLogger& serverLogger)
+			: this_status_code(statusCode), logger(serverLogger)
 	{
 		if (storageMemNames.empty())
 			throw std::runtime_error("1 storage minimum");
 
-		for (const auto& storageMemName : storageMemNames)
+		for (const auto& storageMemName: storageMemNames)
 		{
 			storages.emplace_back();
 			storages.back().connection = std::make_unique<MemoryConnection>(true, storageMemName);
 			storages.back().client_requested = nullptr;
 			storages.back().clients_to_process = {};
-
-//			std::string connection_log_name = storageMemName + "log";
-//			clients.push_back(std::make_unique<MemoryConnection>(true, connection_log_name));
-//			clients.back()->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
 		}
 
 		try
@@ -72,7 +67,7 @@ public:
 				SharedObject::NULL_DATA));
 	}
 
-	~ServerProcessor()
+	~ServerProcessor() override
 	{
 		delete connection;
 		delete connection_mutex;
@@ -90,7 +85,11 @@ public:
 			client_id++;
 			connection->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
 					connection_name));
-			std::cout << "Create connection: " << connection_name << std::endl;
+
+			std::stringstream log;
+			log << "[SERVER] Create connection: " << connection_name << std::endl;
+			std::cout << log.str();
+			logger.log(log.str(), logger::severity::debug);
 		}
 
 		// processing requests from clients
@@ -100,9 +99,15 @@ public:
 			if (SharedObject::getStatusCode(client_connection->receiveMessage()) != this_status_code)
 			{
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
-				std::cout << "Client '" << client_connection->getName() << "' request ~~~~~~~";
-				message.print();
-				if (message.getRequestResponseCode() == SharedObject::RequestResponseCode::CLOSE_CONNECTION) {
+
+				std::stringstream log;
+				log << "[SERVER] Client '" << client_connection->getName() << "' request:" << std::endl
+					<< message.getPrint();
+				std::cout << log.str();
+				logger.log(log.str(), logger::severity::debug);
+
+				if (message.getRequestResponseCode() == SharedObject::RequestResponseCode::CLOSE_CONNECTION)
+				{
 					it = clients.erase(it);
 					continue;
 				}
@@ -118,33 +123,24 @@ public:
 						it++;
 						continue;
 					}
-					auto contestInfo = ContestInfo::deserialize(RequestObject<ContestInfo>::deserialize(dataOpt.value()).getData());
+					auto contestInfo = ContestInfo::deserialize(
+							RequestObject<ContestInfo>::deserialize(dataOpt.value()).getData());
 					auto& storage = storages.at(contestInfo.hashcode() % storages.size());
 					storage.clients_to_process.push(std::move(*it));
 					it = clients.erase(it);
 					continue;
 				}
-//				case LOG:
-//				{
-//                    logger_.log("[" + client_connection->getName() + "] " + data, logger::severity::trace);
-//					client_connection->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
-//					break;
-//				}
-
 				default:
 				{
 					client_connection->sendMessage(SharedObject(this_status_code,
 							SharedObject::RequestResponseCode::ERROR, SharedObject::NULL_DATA));
 				}
 				}
-//				for (auto& client : clients)
-//					std::cout << client->getName() << " |";
-//				std::cout << std::endl;
 			}
 			it++;
 		}
 
-		for (auto& storage : storages)
+		for (auto& storage: storages)
 		{
 			if (storage.client_requested == nullptr && !storage.clients_to_process.empty())
 			{
@@ -168,17 +164,7 @@ public:
 			}
 		}
 
-//        for (auto& storage_log : storages_log)
-//        {
-//            if (SharedObject::getStatusCode(storage_log->receiveMessage()) == this_status_code)
-//            {
-//                continue;
-//            }
-//            SharedObject message = SharedObject::deserialize(storage_log->receiveMessage());
-//            auto data = message.getData().value();
-//            logger_.log("[" + storage_log->getName() + "] " + data, logger::severity::trace);
-//            storage_log->sendMessage(SharedObject(this_status_code, OK, SharedObject::NULL_DATA));
-//        }
+		logger.process();
 	}
 };
 

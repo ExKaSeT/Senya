@@ -23,6 +23,7 @@ public:
 		ADD = 10,
 		CONTAINS = 11,
 		REMOVE = 12,
+		GET_KEY = 13
 	};
 
 private:

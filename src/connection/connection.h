@@ -16,7 +16,7 @@ public:
 
 	virtual void sendMessage(const Serializable&) const = 0;
 
-	virtual ~Connection() {};
+	virtual ~Connection() = default;
 };
 
 
