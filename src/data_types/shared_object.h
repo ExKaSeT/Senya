@@ -81,7 +81,7 @@ public:
 		return *serializedSharedObject;
 	}
 
-	int GetStatusCode() const
+	int getStatusCode() const
 	{
 		return status_code;
 	}

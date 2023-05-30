@@ -83,6 +83,8 @@ public:
 
 	void process() override
 	{
+		logger.process();
+
 		if ((SharedObject::getStatusCode(connection->receiveMessage()) != this_status_code))
 		{
 			SharedObject message = SharedObject::deserialize(connection->receiveMessage());
@@ -219,8 +221,6 @@ public:
 			connection->sendMessage(SharedObject(this_status_code,
 					SharedObject::RequestResponseCode::OK, response));
 		}
-
-		logger.process();
 	}
 };
 

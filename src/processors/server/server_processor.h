@@ -75,6 +75,8 @@ public:
 
 	void process() override
 	{
+		logger.process();
+
 		// clients get connection
 		if ((SharedObject::getStatusCode(connection->receiveMessage()) != this_status_code))
 		{
@@ -163,8 +165,6 @@ public:
 				storage.client_requested = nullptr;
 			}
 		}
-
-		logger.process();
 	}
 };
 
