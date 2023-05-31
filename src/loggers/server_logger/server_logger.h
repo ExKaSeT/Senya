@@ -46,17 +46,6 @@ public:
 		ss << std::string(reinterpret_cast<const char* const>(&severity), sizeof(severity));
 		size_t tmp = string.length();
 		ss << std::string(reinterpret_cast<char*>(&tmp), sizeof(tmp)) << string;
-		if (mutex->try_lock())
-		{
-			if (SharedObject::getStatusCode(connection->receiveMessage()) == serverStatusCode)
-			{
-				connection->sendMessage(SharedObject(serverStatusCode + 1,
-						SharedObject::RequestResponseCode::LOG, ss.str()));
-				mutex->unlock();
-				return;
-			}
-			mutex->unlock();
-		}
 		toProcess.emplace(ss.str());
 	}
 
