@@ -14,6 +14,7 @@
 #include "../../data_types/contest_info.h"
 #include "../../collections/Map.h"
 #include "../../collections/BPlusTree/BPlusTreeMap.h"
+#include "../../connection/multiple_request.h"
 
 
 using namespace boost::interprocess;
@@ -22,8 +23,8 @@ using namespace boost::interprocess;
 struct Storage
 {
 	std::unique_ptr<MemoryConnection> connection;
-	std::unique_ptr<MemoryConnection> client_requested;
-	std::queue<std::unique_ptr<MemoryConnection>> clients_to_process;
+	std::shared_ptr<Connection> client_requested;
+	std::queue<std::shared_ptr<Connection>> clients_to_process;
 };
 
 class ServerProcessor : public Processor
@@ -31,7 +32,7 @@ class ServerProcessor : public Processor
 private:
 
 	std::vector<Storage> storages;
-	std::vector<std::unique_ptr<MemoryConnection>> clients;
+	std::vector<std::shared_ptr<Connection>> clients;
 	int client_id = 0;
 	const int this_status_code;
 	const Connection* connection;
@@ -81,7 +82,7 @@ public:
 		if ((SharedObject::getStatusCode(connection->receiveMessage()) != this_status_code))
 		{
 			std::string connection_name = "client" + std::to_string(client_id);
-			clients.push_back(std::make_unique<MemoryConnection>(true, connection_name));
+			clients.push_back(std::make_shared<MemoryConnection>(true, connection_name));
 			clients.back()->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
 					SharedObject::NULL_DATA));
 			client_id++;
@@ -90,14 +91,14 @@ public:
 
 			std::stringstream log;
 			log << "[SERVER] Create connection: " << connection_name << std::endl;
-			std::cout << log.str();
+			std::cout << log.str() << std::endl;
 			logger.log(log.str(), logger::severity::debug);
 		}
 
 		// processing requests from clients
 		for (auto it = clients.begin(); it != clients.end();)
 		{
-			MemoryConnection* client_connection = it->get();
+			Connection* client_connection = it->get();
 			if (SharedObject::getStatusCode(client_connection->receiveMessage()) != this_status_code)
 			{
 				SharedObject message = SharedObject::deserialize(client_connection->receiveMessage());
@@ -125,10 +126,23 @@ public:
 						it++;
 						continue;
 					}
-					auto contestInfo = ContestInfo::deserialize(
-							RequestObject<ContestInfo>::deserialize(dataOpt.value()).getData());
+					auto request = RequestObject<ContestInfo>::deserialize(dataOpt.value());
+					if (request.getRequestCode() == RequestObject<ContestInfo>::RequestCode::DELETE_DATABASE
+						|| request.getRequestCode() == RequestObject<ContestInfo>::RequestCode::DELETE_SCHEMA
+						|| request.getRequestCode() == RequestObject<ContestInfo>::RequestCode::DELETE_TABLE)
+					{
+						auto multipleRequest = std::make_shared<MultipleRequest>(std::move(*it), storages.size());
+						for (auto& storage: storages)
+						{
+							storage.clients_to_process.push(multipleRequest);
+						}
+						it = clients.erase(it);
+						continue;
+					}
+
+					auto contestInfo = ContestInfo::deserialize(request.getData());
 					auto& storage = storages.at(contestInfo.hashcode() % storages.size());
-					storage.clients_to_process.push(std::move(*it));
+					storage.clients_to_process.push(*it);
 					it = clients.erase(it);
 					continue;
 				}
@@ -146,7 +160,7 @@ public:
 		{
 			if (storage.client_requested == nullptr && !storage.clients_to_process.empty())
 			{
-				storage.client_requested = std::move(storage.clients_to_process.front());
+				storage.client_requested = storage.clients_to_process.front();
 				storage.clients_to_process.pop();
 				storage.connection->sendMessage(SharedObject::deserialize(storage.client_requested->receiveMessage()));
 			}
@@ -160,9 +174,30 @@ public:
 				}
 				auto message = SharedObject::deserialize(storage.connection->receiveMessage());
 				message.setStatusCode(this_status_code);
-				storage.client_requested->sendMessage(message);
-				clients.push_back(std::move(storage.client_requested));
-				storage.client_requested = nullptr;
+
+				if (auto multipleRequest = std::dynamic_pointer_cast<MultipleRequest>(storage.client_requested))
+				{
+					bool status = message.getRequestResponseCode() == SharedObject::RequestResponseCode::OK;
+					if (multipleRequest->getResponse(status))
+					{
+						status = multipleRequest->getStatus();
+						auto client = multipleRequest->getConnection();
+						client->sendMessage(SharedObject(this_status_code,
+								SharedObject::RequestResponseCode::OK, status ? "true" : "false"));
+						clients.push_back(client);
+						storage.client_requested = nullptr;
+					}
+					else
+					{
+						storage.client_requested = nullptr;
+					}
+				}
+				else
+				{
+					storage.client_requested->sendMessage(message);
+					clients.push_back(storage.client_requested);
+					storage.client_requested = nullptr;
+				}
 			}
 		}
 	}

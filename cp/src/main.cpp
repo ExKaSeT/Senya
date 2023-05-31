@@ -26,11 +26,11 @@ int main()
 	clientProcessor.contains(contestInfo).value().print();
 
 
-//	logger* logger = logger_builder_concrete::file_construct("log_settings.txt");
-//	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, {"storage1", "storage2"}, *logger);
+//	ostream_logger* ostream_logger = logger_builder_concrete::file_construct("log_settings.txt");
+//	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, {"storage1", "storage2"}, *ostream_logger);
 //	while (true)
 //		serverProcessor.process();
-//	delete logger;
+//	delete ostream_logger;
 
 //	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage2");
 //	while (true)

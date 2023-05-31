@@ -23,7 +23,10 @@ public:
 		ADD = 10,
 		CONTAINS = 11,
 		REMOVE = 12,
-		GET_KEY = 13
+		GET_KEY = 13,
+		DELETE_DATABASE = 14,
+		DELETE_SCHEMA = 15,
+		DELETE_TABLE = 16,
 	};
 
 private:

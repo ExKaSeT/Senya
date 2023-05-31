@@ -138,6 +138,56 @@ public:
 		return false;
 	};
 
+	bool removeDatabase(const std::string& database)
+	{
+		RequestObject<ContestInfo> request(RequestObject<ContestInfo>::RequestCode::DELETE_DATABASE,
+				RequestObject<ContestInfo>::NULL_DATA, database, RequestObject<ContestInfo>::NULL_DATA,
+				RequestObject<ContestInfo>::NULL_DATA);
+		connection->sendMessage(SharedObject(thisStatusCode,
+				SharedObject::RequestResponseCode::REQUEST, request));
+		waitResponse();
+		auto response = SharedObject::deserialize(connection->receiveMessage());
+		if (response.getRequestResponseCode() != SharedObject::RequestResponseCode::OK)
+			return false;
+		std::string result = response.getData().value();
+		if (result == "true")
+			return true;
+		return false;
+	};
+
+	bool removeSchema(const std::string& database, const std::string& schema)
+	{
+		RequestObject<ContestInfo> request(RequestObject<ContestInfo>::RequestCode::DELETE_SCHEMA,
+				RequestObject<ContestInfo>::NULL_DATA, database, schema,
+				RequestObject<ContestInfo>::NULL_DATA);
+		connection->sendMessage(SharedObject(thisStatusCode,
+				SharedObject::RequestResponseCode::REQUEST, request));
+		waitResponse();
+		auto response = SharedObject::deserialize(connection->receiveMessage());
+		if (response.getRequestResponseCode() != SharedObject::RequestResponseCode::OK)
+			return false;
+		std::string result = response.getData().value();
+		if (result == "true")
+			return true;
+		return false;
+	};
+
+	bool removeTable(const std::string& database, const std::string& schema, const std::string& table)
+	{
+		RequestObject<ContestInfo> request(RequestObject<ContestInfo>::RequestCode::DELETE_TABLE,
+				RequestObject<ContestInfo>::NULL_DATA, database, schema, table);
+		connection->sendMessage(SharedObject(thisStatusCode,
+				SharedObject::RequestResponseCode::REQUEST, request));
+		waitResponse();
+		auto response = SharedObject::deserialize(connection->receiveMessage());
+		if (response.getRequestResponseCode() != SharedObject::RequestResponseCode::OK)
+			return false;
+		std::string result = response.getData().value();
+		if (result == "true")
+			return true;
+		return false;
+	};
+
 	void log(const std::string& message, logger::severity severity)
 	{
 		logger.logSync(message, severity);

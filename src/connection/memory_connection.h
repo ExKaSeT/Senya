@@ -15,27 +15,27 @@ class MemoryConnection : public Connection
 {
 private:
 
-	std::string mem_name;
 	mapped_region* mreg;
 	const bool is_server;
 
 public:
 
-	MemoryConnection(bool isServer, const std::string& memoryName) : is_server(isServer), mem_name(memoryName)
+	MemoryConnection(bool isServer, const std::string& memoryName) : is_server(isServer)
 	{
+		Connection::connectionName = memoryName;
 		if (is_server)
 		{
 			try
-			{ shared_memory_object::remove(mem_name.c_str()); }
+			{ shared_memory_object::remove(Connection::connectionName.c_str()); }
 			catch (...)
 			{}
-			shared_memory_object shm(create_only, mem_name.c_str(), read_write);
+			shared_memory_object shm(create_only, Connection::connectionName.c_str(), read_write);
 			shm.truncate(1024);
 			mreg = new mapped_region(shm, read_write);
 		}
 		else
 		{
-			shared_memory_object shm(open_only, mem_name.c_str(), read_write);
+			shared_memory_object shm(open_only, Connection::connectionName.c_str(), read_write);
 			mreg = new mapped_region(shm, read_write);
 		}
 	}
@@ -44,7 +44,7 @@ public:
 	{
 		if (is_server)
 		{
-			shared_memory_object::remove(mem_name.c_str());
+			shared_memory_object::remove(Connection::connectionName.c_str());
 		}
 		delete mreg;
 	}
@@ -62,11 +62,6 @@ public:
 		char* address = static_cast<char*>(mreg->get_address());
 		memcpy(address + 1, data_str + 1, str.length() - 1);
 		*address = *data_str;
-	}
-
-	const std::string& getName()
-	{
-		return mem_name;
 	}
 };
 

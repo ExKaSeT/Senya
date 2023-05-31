@@ -69,7 +69,7 @@ private:
 public:
 
 	StorageProcessor(const int statusCode, const std::string& memName, ServerLogger& serverLogger)
-	: this_status_code(statusCode), db(3, 3, stringComparer), logger(serverLogger), connectionName(memName)
+			: this_status_code(statusCode), db(3, 3, stringComparer), logger(serverLogger), connectionName(memName)
 	{
 		connection = new MemoryConnection(false, memName);
 		connection->sendMessage(SharedObject(this_status_code, SharedObject::RequestResponseCode::OK,
@@ -91,7 +91,7 @@ public:
 
 			std::stringstream log;
 			log << "[" << connectionName << "] Receive:" << std::endl << message.getPrint();
-			std::cout << log.str();
+			std::cout << log.str() << std::endl;
 			logger.log(log.str(), logger::severity::debug);
 
 			auto messageData = message.getData();
@@ -102,13 +102,13 @@ public:
 				return;
 			}
 			auto request = RequestObject<ContestInfo>::deserialize(messageData.value());
-			ContestInfo data = ContestInfo::deserialize(request.getData());
 			std::string response = SharedObject::NULL_DATA;
 
 			switch (request.getRequestCode())
 			{
 			case RequestObject<ContestInfo>::ADD:
 			{
+				ContestInfo data = ContestInfo::deserialize(request.getData());
 				auto schemasOpt = db.get(request.getDatabase());
 				if (!schemasOpt)
 				{
@@ -149,6 +149,7 @@ public:
 			}
 			case RequestObject<ContestInfo>::CONTAINS:
 			{
+				ContestInfo data = ContestInfo::deserialize(request.getData());
 				bool contains = false;
 				auto schemas = db.get(request.getDatabase());
 				if (schemas)
@@ -171,6 +172,7 @@ public:
 			}
 			case RequestObject<ContestInfo>::REMOVE:
 			{
+				ContestInfo data = ContestInfo::deserialize(request.getData());
 				bool removed = false;
 				auto schemas = db.get(request.getDatabase());
 				if (schemas)
@@ -193,6 +195,7 @@ public:
 			}
 			case RequestObject<ContestInfo>::GET_KEY:
 			{
+				ContestInfo data = ContestInfo::deserialize(request.getData());
 				auto schemas = db.get(request.getDatabase());
 				if (schemas)
 				{
@@ -211,6 +214,52 @@ public:
 					}
 				}
 				break;
+			}
+			case RequestObject<ContestInfo>::DELETE_DATABASE:
+			{
+				bool removed = db.remove(request.getDatabase());
+				if (!removed)
+				{
+					connection->sendMessage(SharedObject(this_status_code,
+							SharedObject::RequestResponseCode::ERROR, response));
+					return;
+				}
+				break;
+			}
+			case RequestObject<ContestInfo>::DELETE_SCHEMA:
+			{
+				bool removed = false;
+				auto schemas = db.get(request.getDatabase());
+				if (schemas)
+				{
+					removed = schemas.value()->remove(request.getSchema());
+				}
+				if (!removed)
+				{
+					connection->sendMessage(SharedObject(this_status_code,
+							SharedObject::RequestResponseCode::ERROR, response));
+					return;
+				}
+				break;
+			}
+			case RequestObject<ContestInfo>::DELETE_TABLE:
+			{
+				bool removed = false;
+				auto schemas = db.get(request.getDatabase());
+				if (schemas)
+				{
+					auto tables = schemas.value()->get(request.getSchema());
+					if (tables)
+					{
+						removed = tables.value()->remove(request.getTable());
+					}
+				}
+				if (!removed)
+				{
+					connection->sendMessage(SharedObject(this_status_code,
+							SharedObject::RequestResponseCode::ERROR, response));
+					return;
+				}
 			}
 			default:
 			{

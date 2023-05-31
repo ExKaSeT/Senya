@@ -10,7 +10,16 @@
 
 class Connection
 {
+protected:
+
+	std::string connectionName = "undefined";
+
 public:
+
+	const std::string& getName()
+	{
+		return connectionName;
+	}
 
 	virtual const char* receiveMessage() const = 0;
 
