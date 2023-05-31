@@ -6,6 +6,7 @@
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <thread>
 #include <random>
+#include <fstream>
 #include "../../connection/connection.h"
 #include "../../connection/memory_connection.h"
 #include "../processor.h"
@@ -243,12 +244,8 @@ private:
 		return oss.str();
 	}
 
-	ContestInfo readContestInfoFromCin()
+	ContestInfo readContestInfoFromString(const std::string& contestInfoStr)
 	{
-		std::cout << "Enter contest info string: ";
-		std::string contestInfoStr;
-		std::getline(std::cin, contestInfoStr);
-
 		std::istringstream iss(contestInfoStr);
 		std::vector<std::string> contestInfoTokens;
 
@@ -279,6 +276,15 @@ private:
 		return ContestInfo(candidate_id, last_name, first_name, patronymic, birth_date,
 				resume_link, hr_manager_id, contest_id, programming_language,
 				num_tasks, solved_tasks, cheating_detected);
+	}
+
+	ContestInfo readContestInfoFromCin()
+	{
+		std::cout << "Enter contest info string: ";
+		std::string contestInfoStr;
+		std::getline(std::cin, contestInfoStr);
+
+		return readContestInfoFromString(contestInfoStr);
 	}
 
 	int readIntFromCin()
@@ -457,6 +463,151 @@ public:
 				break;
 			}
 		}
+	}
+
+	void fileCommands(const std::string& filename)
+	{
+		std::cout << "Format:" << std::endl;
+		std::cout << "ADD;DATABASE;SCHEMA;TABLE;CONTEST_INFO" << std::endl;
+		std::cout << "GET;DATABASE;SCHEMA;TABLE;CANDIDATE_ID;CONTEST_ID" << std::endl;
+		std::cout << "CONTAINS;DATABASE;SCHEMA;TABLE;CONTEST_INFO" << std::endl;
+		std::cout << "REMOVE;DATABASE;SCHEMA;TABLE;CONTEST_INFO" << std::endl;
+		std::cout << "REMOVE_DATABASE;DATABASE" << std::endl;
+		std::cout << "REMOVE_SCHEMA;DATABASE;SCHEMA" << std::endl;
+		std::cout << "REMOVE_TABLE;DATABASE;SCHEMA;TABLE" << std::endl << std::endl;
+
+		std::vector<std::vector<std::string>> commands;
+
+		std::ifstream file(filename);
+		if (!file.is_open()) {
+			throw std::runtime_error("Failed to open file: " + filename);
+		}
+
+		std::string line;
+		while (std::getline(file, line)) {
+			std::vector<std::string> command;
+			std::string value;
+			std::stringstream ss(line);
+
+			while (std::getline(ss, value, ';')) {
+				command.push_back(value);
+			}
+
+			commands.push_back(command);
+		}
+
+		file.close();
+
+		for (const auto& command : commands) {
+			if (command.empty()) {
+				continue;
+			}
+
+			std::string cmd = command[0];
+
+			if (cmd == "ADD") {
+				// Обработка команды ADD
+				// command[1] - DATABASE
+				// command[2] - SCHEMA
+				// command[3] - TABLE
+				// command[4] - CONTEST_INFO
+				if (add(command[1], command[2], command[3], readContestInfoFromString(command[4])))
+				{
+					std::cout << "Contest added successfully." << std::endl;
+				}
+				else
+				{
+					std::cout << "Failed to add contest." << std::endl;
+				}
+			} else if (cmd == "GET") {
+				// Обработка команды GET
+				// command[1] - DATABASE
+				// command[2] - SCHEMA
+				// command[3] - TABLE
+				// command[4] - CANDIDATE_ID
+				// command[5] - CONTEST_ID
+				auto result = get(command[1], command[2], command[3],
+						ContestInfo::get_obj_for_search(std::stoi(command[4]), std::stoi(command[5])));
+				if (result)
+				{
+					std::cout << "Found Contest: ";
+					result.value().print();
+				}
+				else
+				{
+					std::cout << "Contest not found." << std::endl;
+				}
+			} else if (cmd == "CONTAINS") {
+				// Обработка команды CONTAINS
+				// command[1] - DATABASE
+				// command[2] - SCHEMA
+				// command[3] - TABLE
+				// command[4] - CONTEST_INFO
+				if (contains(command[1], command[2], command[3],
+						readContestInfoFromString(command[4])))
+				{
+					std::cout << "Contest exists." << std::endl;
+				}
+				else
+				{
+					std::cout << "Contest does not exist." << std::endl;
+				}
+			} else if (cmd == "REMOVE") {
+				// Обработка команды REMOVE
+				// command[1] - DATABASE
+				// command[2] - SCHEMA
+				// command[3] - TABLE
+				// command[4] - CONTEST_INFO
+				if (remove(command[1], command[2], command[3],
+						readContestInfoFromString(command[4])))
+				{
+					std::cout << "Contest removed successfully." << std::endl;
+				}
+				else
+				{
+					std::cout << "Failed to remove contest." << std::endl;
+				}
+			} else if (cmd == "REMOVE_DATABASE") {
+				// Обработка команды REMOVE_DATABASE
+				// command[1] - DATABASE
+				if (removeDatabase(command[1]))
+				{
+					std::cout << "Database removed successfully." << std::endl;
+				}
+				else
+				{
+					std::cout << "Failed to remove database." << std::endl;
+				}
+			} else if (cmd == "REMOVE_SCHEMA") {
+				// Обработка команды REMOVE_SCHEMA
+				// command[1] - DATABASE
+				// command[2] - SCHEMA
+				if (removeSchema(command[1], command[2]))
+				{
+					std::cout << "Schema removed successfully." << std::endl;
+				}
+				else
+				{
+					std::cout << "Failed to remove schema." << std::endl;
+				}
+			} else if (cmd == "REMOVE_TABLE") {
+				// Обработка команды REMOVE_TABLE
+				// command[1] - DATABASE
+				// command[2] - SCHEMA
+				// command[3] - TABLE
+				if (removeTable(command[1], command[2], command[3]))
+				{
+					std::cout << "Table removed successfully." << std::endl;
+				}
+				else
+				{
+					std::cout << "Failed to remove table." << std::endl;
+				}
+			} else {
+				std::cout << "Invalid command: " << cmd << std::endl;
+			}
+		}
+
 	}
 };
 
