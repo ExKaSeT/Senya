@@ -23,37 +23,57 @@ const std::string LOG_MUTEX_NAME = "log_mutex";
 
 
 int main()
-{ // TODO:: with "Decorator" create multiple storage request from client (deletion db, schema, table)
-	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+{
+	ContestInfo contestInfo1(98, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+			991, 992, "programming_language", 993, 994, true);
+	ContestInfo contestInfo2(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
 			991, 992, "programming_language", 993, 994, true);
 	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
 	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, serverLogger);
-	std::cout << clientProcessor.add("database2", "schema1", "table1", contestInfo);
-	std::cout << clientProcessor.contains("database2", "schema1", "table1", contestInfo);
-	std::cout << clientProcessor.remove("database2", "schema1", "table1", contestInfo);
-	std::cout << clientProcessor.contains("database2", "schema1", "table1", contestInfo);
-	std::cout << clientProcessor.add("database2", "schema1", "table1", contestInfo);
-	clientProcessor.get("database2", "schema1", "table1", contestInfo).value().print();
+	clientProcessor.interactiveMenu();
+
+//	std::cout << clientProcessor.add("database1", "schema1", "table1", contestInfo1);
+//	std::cout << clientProcessor.add("database2", "schema1", "table1", contestInfo2);
+//	std::cout << clientProcessor.removeSchema("database2", "schema1");
+//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo1);
+//	std::cout << clientProcessor.contains("database2", "schema1", "table1", contestInfo2);
+
+//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo1);
+//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo2);
+//	std::cout << clientProcessor.add("database1", "schema1", "table1", contestInfo);
+//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
+//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
+//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
 
 
 //	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
 //	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME,
 //			{"storage1", "storage2"}, serverLogger);
 //	while (true)
+//	{
 //		serverProcessor.process();
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	}
 
 
 //	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
 //	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage2", serverLogger);
 //	while (true)
+//	{
 //		storageProcessor.process();
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	}
 
 
 //	logger* logger = logger_builder_concrete::file_construct("log_settings.txt");
 //	LogServerProcessor logServerProcessor(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME, logger);
 //	while (true)
+//	{
 //		logServerProcessor.process();
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	}
 //	delete logger;
+
 
 	return 0;
 }
