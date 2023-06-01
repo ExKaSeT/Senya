@@ -57,7 +57,7 @@ int main()
 
 
 //	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
-//	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage2", serverLogger);
+//	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage1", serverLogger);
 //	while (true)
 //	{
 //		storageProcessor.process();

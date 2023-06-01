@@ -511,6 +511,8 @@ public:
 				// command[2] - SCHEMA
 				// command[3] - TABLE
 				// command[4] - CONTEST_INFO
+				if (command.size() != 5)
+					throw std::runtime_error("Incorrect format");
 				if (add(command[1], command[2], command[3], readContestInfoFromString(command[4])))
 				{
 					std::cout << "Contest added successfully." << std::endl;
@@ -526,6 +528,8 @@ public:
 				// command[3] - TABLE
 				// command[4] - CANDIDATE_ID
 				// command[5] - CONTEST_ID
+				if (command.size() != 6)
+					throw std::runtime_error("Incorrect format");
 				auto result = get(command[1], command[2], command[3],
 						ContestInfo::get_obj_for_search(std::stoi(command[4]), std::stoi(command[5])));
 				if (result)
@@ -543,6 +547,8 @@ public:
 				// command[2] - SCHEMA
 				// command[3] - TABLE
 				// command[4] - CONTEST_INFO
+				if (command.size() != 5)
+					throw std::runtime_error("Incorrect format");
 				if (contains(command[1], command[2], command[3],
 						readContestInfoFromString(command[4])))
 				{
@@ -558,6 +564,8 @@ public:
 				// command[2] - SCHEMA
 				// command[3] - TABLE
 				// command[4] - CONTEST_INFO
+				if (command.size() != 5)
+					throw std::runtime_error("Incorrect format");
 				if (remove(command[1], command[2], command[3],
 						readContestInfoFromString(command[4])))
 				{
@@ -570,6 +578,8 @@ public:
 			} else if (cmd == "REMOVE_DATABASE") {
 				// Обработка команды REMOVE_DATABASE
 				// command[1] - DATABASE
+				if (command.size() != 2)
+					throw std::runtime_error("Incorrect format");
 				if (removeDatabase(command[1]))
 				{
 					std::cout << "Database removed successfully." << std::endl;
@@ -582,6 +592,8 @@ public:
 				// Обработка команды REMOVE_SCHEMA
 				// command[1] - DATABASE
 				// command[2] - SCHEMA
+				if (command.size() != 3)
+					throw std::runtime_error("Incorrect format");
 				if (removeSchema(command[1], command[2]))
 				{
 					std::cout << "Schema removed successfully." << std::endl;
@@ -595,6 +607,8 @@ public:
 				// command[1] - DATABASE
 				// command[2] - SCHEMA
 				// command[3] - TABLE
+				if (command.size() != 4)
+					throw std::runtime_error("Incorrect format");
 				if (removeTable(command[1], command[2], command[3]))
 				{
 					std::cout << "Table removed successfully." << std::endl;

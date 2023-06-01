@@ -1,89 +1,78 @@
-//#include "collections/b-tree/trees/vanilla_b_plus_tree.h"
-//#include "collections/hash_set.h"
+
+
 #include "data_types/contest_info.h"
 #include "data_types/shared_object.h"
 #include "processors/processor.h"
 #include "processors/client/client_processor.h"
 #include "processors/server/server_processor.h"
 #include "processors/storage/storage_processor.h"
-#include "logger/logger_builder.h"
-#include "logger/logger_builder_concrete.h"
+#include "loggers/ostream_logger/logger_builder.h"
+#include "loggers/ostream_logger/logger_builder_concrete.h"
+#include "loggers/server_logger/server_logger.h"
+#include "processors/log_server/log_server_processor.h"
+
 
 const std::string CON_MEM_NAME = "con_mem";
 const std::string CON_MUTEX_NAME = "con_mutex";
 const int SERVER_STATUS_CODE = 1;
 const int CLIENT_STATUS_CODE = 2;
 const int STORAGE_STATUS_CODE = 3;
+const int LOG_SERVER_STATUS_CODE = 4;
+const std::string LOG_MEM_NAME = "log_mem";
+const std::string LOG_MUTEX_NAME = "log_mutex";
 
 
 int main()
 {
-	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
-		991, 992, "programming_language", 993, 994, true);
-	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME);
-	clientProcessor.log("Connected");
-	clientProcessor.add(contestInfo);
-	clientProcessor.contains(contestInfo).value().print();
+	ContestInfo contestInfo1(98, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+			991, 992, "programming_language", 993, 994, true);
+	ContestInfo contestInfo2(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
+			991, 992, "programming_language", 993, 994, true);
+	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
+	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, serverLogger);
+	clientProcessor.interactiveMenu();
+
+//	std::cout << clientProcessor.add("database1", "schema1", "table1", contestInfo1);
+//	std::cout << clientProcessor.add("database2", "schema1", "table1", contestInfo2);
+//	std::cout << clientProcessor.removeSchema("database2", "schema1");
+//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo1);
+//	std::cout << clientProcessor.contains("database2", "schema1", "table1", contestInfo2);
+
+//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo1);
+//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo2);
+//	std::cout << clientProcessor.add("database1", "schema1", "table1", contestInfo);
+//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
+//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
+//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
 
 
-//	ostream_logger* ostream_logger = logger_builder_concrete::file_construct("log_settings.txt");
-//	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, {"storage1", "storage2"}, *ostream_logger);
+//	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
+//	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME,
+//			{"storage1", "storage2"}, serverLogger);
 //	while (true)
+//	{
 //		serverProcessor.process();
-//	delete ostream_logger;
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	}
 
-//	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage2");
+
+//	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
+//	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage1", serverLogger);
 //	while (true)
+//	{
 //		storageProcessor.process();
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	}
 
 
-
-//	system("chcp 1251");
-//	setbuf(stdout, 0);
-
-//	ClientConnection clientConnection(CON_MEM_NAME, CON_MUTEX_NAME);
-//	getchar();
-
-//	ServerConnection clientConnection(CON_MEM_NAME, CON_MUTEX_NAME);
-//	getchar();
-
-
-
-
-
-//	auto tree = HashSet<ContestInfo>();
-//	ContestInfo contestInfo(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
-//		991, 992, "programming_language", 993, 994, true);
-//
-//	SharedObject sharedObject(1, 1, contestInfo.serialize());
-//
-//	std::cout << sharedObject.serialize() << std::endl;
-//
-//	auto shared = SharedObject::deserialize(sharedObject.serialize().c_str());
-//	ContestInfo::deserialize(shared.GetData()).print();
-
-//	std::cout << contestInfo.getProgrammingLanguage() << "\n";
-//
-//	std::cout << contestInfo.serialize();
-//	contestInfo = ContestInfo::deserialize(contestInfo.serialize());
-//	contestInfo.print();
-
-
-//	tree.add(contestInfo);
-//	tree.add(ContestInfo::get_obj_for_search(10, 10));
-//	tree.add(ContestInfo::get_obj_for_search(11, 11));
-//	tree.add(ContestInfo::get_obj_for_search(12, 11));
-//	std::optional<ContestInfo> opt = tree.contains(ContestInfo::get_obj_for_search(99, 992));
-//
-//	std::cout << (opt ? opt.value().getCandidateId() : -1) << contestInfo.getCandidateId() << "\n\n";
-
-//	StringPool stringPool = StringPool::instance();
-//	auto ref = stringPool.get_string("KEK");
-//	auto ref1 = stringPool.get_string("KEK");
-//	stringPool.unget_string(ref);
-//	stringPool.unget_string(ref);
-//	stringPool.unget_string(ref);
-//	std::cout << ref << " ---\n";
+//	logger* logger = logger_builder_concrete::file_construct("log_settings.txt");
+//	LogServerProcessor logServerProcessor(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME, logger);
+//	while (true)
+//	{
+//		logServerProcessor.process();
+//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	}
+//	delete logger;
 
 
 	return 0;
