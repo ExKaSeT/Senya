@@ -20,9 +20,11 @@ public:
 
 public:
 
-	virtual logger const* log(const std::string&, severity) const = 0;
-
 	virtual ~logger();
+
+public:
+
+	virtual logger const* log(const std::string&, severity) const = 0;
 
 };
 

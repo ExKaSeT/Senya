@@ -1,79 +1,141 @@
+#include <iostream>
+#include <random>
+#include "BPlusTree/BPlusTreeMap.h"
+#include "BPlusTree/SortedArray.h"
+#include "../lab_5/1/src/logger_builder_concrete.h"
+#include "./allocators/default_memory.h"
 
 
-#include "data_types/contest_info.h"
-#include "data_types/shared_object.h"
-#include "processors/processor.h"
-#include "processors/client/client_processor.h"
-#include "processors/server/server_processor.h"
-#include "processors/storage/storage_processor.h"
-#include "loggers/ostream_logger/logger_builder.h"
-#include "loggers/ostream_logger/logger_builder_concrete.h"
-#include "loggers/server_logger/server_logger.h"
-#include "processors/log_server/log_server_processor.h"
+int cmp(int const& a, int const& b)
+{
+	return a - b;
+}
 
-
-const std::string CON_MEM_NAME = "con_mem";
-const std::string CON_MUTEX_NAME = "con_mutex";
-const int SERVER_STATUS_CODE = 1;
-const int CLIENT_STATUS_CODE = 2;
-const int STORAGE_STATUS_CODE = 3;
-const int LOG_SERVER_STATUS_CODE = 4;
-const std::string LOG_MEM_NAME = "log_mem";
-const std::string LOG_MUTEX_NAME = "log_mutex";
-
-
+// TODO:: parent usage: leafNodeChangedMinElem(done**); when invoke addKeyToInternalRec;
+// TODO:: in afterNodeMerge; in remove function*
 int main()
 {
-	ContestInfo contestInfo1(98, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
-			991, 992, "programming_language", 993, 994, true);
-	ContestInfo contestInfo2(99, "last_name", "first_name", "patronymic", "birth_date", "resume_link",
-			991, 992, "programming_language", 993, 994, true);
-	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
-	ClientProcessor clientProcessor(CLIENT_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME, serverLogger);
-	clientProcessor.interactiveMenu();
+	std::array<int, 5> myArray;
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(1, 100);
 
-//	std::cout << clientProcessor.add("database1", "schema1", "table1", contestInfo1);
-//	std::cout << clientProcessor.add("database2", "schema1", "table1", contestInfo2);
-//	std::cout << clientProcessor.removeSchema("database2", "schema1");
-//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo1);
-//	std::cout << clientProcessor.contains("database2", "schema1", "table1", contestInfo2);
-
-//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo1);
-//	std::cout << clientProcessor.contains("database1", "schema1", "table1", contestInfo2);
-//	std::cout << clientProcessor.add("database1", "schema1", "table1", contestInfo);
-//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
-//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
-//	clientProcessor.get("database1", "schema1", "table1", contestInfo).value().print();
+	logger_builder* loggerBuilder = new logger_builder_concrete();
+	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 
 
-//	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
-//	ServerProcessor serverProcessor(SERVER_STATUS_CODE, CON_MEM_NAME, CON_MUTEX_NAME,
-//			{"storage1", "storage2"}, serverLogger);
-//	while (true)
+	BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
+//	int arrLen = 30;
+//	int arr[arrLen];
+//	int count = 0;
+//	for (int x = 0; x < arrLen; x++)
 //	{
-//		serverProcessor.process();
-//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//		int num = dis(gen);
+//		arr[count] = num;
+//		count++;
+//		map.checkCorrectness();
+//		for (int x = 0; x < count; x++) {
+//			std::cout << arr[x] << ", ";
+//		}
+//		std::cout << std::endl;
+//		map.add(num, Null::value());
+//		map.print();
+//	}
+
+	int arr[] = {33, 98, 74, 98, 18, 52, 94, 29, 4, 82, 64, 11};
+	for (int x = 0; x < 11; x++) {
+		int num = arr[x];
+		map.add(num, Null::value());
+		map.print();
+	}
+
+	map.add(11, Null::value());
+	map.print();
+
+
+
+//	for (int x = 0; x < arrLen; x++) {
+//		int num = arr[x];
+////		std::cout << "DELETE: " << num << std::endl;
+//		map.remove(num);
+//		map.checkCorrectness();
+////		map.print();
 //	}
 
 
-//	ServerLogger serverLogger(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME);
-//	StorageProcessor storageProcessor(STORAGE_STATUS_CODE, "storage1", serverLogger);
-//	while (true)
+
+
+
+//	BPlusTreeMap<int, int> map(4, 2, cmp, std::make_shared<DefaultMemory>());
+//	int arr[] = {292, 138, 116, 19, 69, 93, 78, 80, 114, 241, 167, 218, 280, 213, 159, 138, 54, 53, 20, 263, 133, 123, 218, 262, 164, 247, 101, 213, 6,
+//			6, 20, 241, 55, 55, 241, 31, 155, 6, 51, 217, 136, 298, 166, 120, 189, 47, 4, 106, 250, 182, 119, 292, 258, 250, 53, 263, 295, 166, 189, 262, 15,
+//			4, 2, 9, 118, 39, 202, 213, 52, 15, 71, 127, 200, 111, 128, 211, 236, 222, 152, 29, 266, 50, 135, 240, 232, 84, 89, 190, 220, 271, 49, 81, 113,
+//			248, 226, 281, 142, 59, 82, 73, 257, 47,
+//	};
+//	int arrLen = 100;
+//	for (int x = 0; x < arrLen; x++)
 //	{
-//		storageProcessor.process();
-//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//		int num = arr[x];
+//		map.add(num, num);
+//	}
+//	map.print();
+//
+//	for (int x = 0; x < arrLen; x++)
+//	{
+//		int num = arr[x];
+//		if (num == 52)
+//			break;
+//		std::cout << "DELETE: " << num << std::endl;
+//		map.remove(num);
+//		map.checkCorrectness();
+//		map.print();
+//	}
+//
+//	map.remove(52);
+//	map.print();
+
+
+
+
+	// ADDITION TEST:
+
+
+//	int count = 0;
+//	while (true) {
+//		BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
+//		for (int x = 0; x < 100; x ++) {
+//			int num = dis(gen);
+//			std::cout << "|| ADD || " << num << std::endl;
+//			map.add(num, num);
+//			map.print();
+//			map.checkCorrectness();
+//		}
+//		count++;
+//		if (count % 100 == 0)
+//			std::cout << count << std::endl;
 //	}
 
-
-//	logger* logger = logger_builder_concrete::file_construct("log_settings.txt");
-//	LogServerProcessor logServerProcessor(LOG_SERVER_STATUS_CODE, LOG_MEM_NAME, LOG_MUTEX_NAME, logger);
-//	while (true)
-//	{
-//		logServerProcessor.process();
-//		std::this_thread::sleep_for(std::chrono::seconds(1));
+//	BPlusTreeMap<int, int> map(3, 4, cmp, std::make_shared<DefaultMemory>());
+//	int arr[100];
+//	int count = 0;
+//	for (int x = 1000; x > 0; x -= 2) {
+//		int num = dis(gen);
+//		arr[count] = num;
+//		count++;
+//		for (int x = 0; x < count; x++)
+//			std::cout << arr[x] << ", ";
+//		std::cout << std::endl;
+//		map.add(num, num);
+//		map.print();
 //	}
-//	delete logger;
 
-
+//	int arr[] = {94, 67, 76, 5, 29, 40, 81, 17, 44, 30, 38, 10, 88, 12, 43, 53, 18, 46, 9, 2};
+//	for (int x = 0; x < 19; x++) {
+//		int num = arr[x];
+//		map.add(num, num);
+//		map.print();
+//	}
+//	map.add(2, 2);
+//	map.print();
 	return 0;
 }

@@ -41,7 +41,7 @@ public:
 
 	virtual std::optional<V> get(const K& key) = 0;
 
-	virtual bool remove(const K& key) = 0;
+//	virtual bool remove(const K& key) = 0;
 
 	virtual bool set(const K& key, const V& newValue) = 0;
 

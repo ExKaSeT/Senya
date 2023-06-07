@@ -1,7 +1,7 @@
 #ifndef SANDBOX_CPP_LOGGER_CONCRETE_H
 #define SANDBOX_CPP_LOGGER_CONCRETE_H
 
-#include "../logger.h"
+#include "logger.h"
 #include "logger_builder_concrete.h"
 #include <map>
 
@@ -31,10 +31,6 @@ public:
 	logger_concrete(logger_concrete const&) = delete;
 
 	logger_concrete& operator=(logger_concrete const&) = delete;
-
-    logger_concrete(logger_concrete&&) = delete;
-
-    logger_concrete& operator=(logger_concrete&&) = delete;
 
 	~logger_concrete() override;
 
