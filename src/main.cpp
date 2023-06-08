@@ -11,46 +11,54 @@ int cmp(int const& a, int const& b)
 	return a - b;
 }
 
-// TODO:: parent usage: leafNodeChangedMinElem(done**); when invoke addKeyToInternalRec;
-// TODO:: in afterNodeMerge; in remove function*
 int main()
 {
-	std::array<int, 5> myArray;
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, 100);
+	std::uniform_int_distribution<> dis(1, 1000);
 
 	logger_builder* loggerBuilder = new logger_builder_concrete();
 	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 
 
-	BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
-//	int arrLen = 30;
-//	int arr[arrLen];
-//	int count = 0;
-//	for (int x = 0; x < arrLen; x++)
-//	{
-//		int num = dis(gen);
-//		arr[count] = num;
-//		count++;
-//		map.checkCorrectness();
-//		for (int x = 0; x < count; x++) {
-//			std::cout << arr[x] << ", ";
-//		}
-//		std::cout << std::endl;
+	while (true) {
+		BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
+		int arrLen = 1000;
+		int arr[arrLen];
+		int count = 0;
+		for (int x = 0; x < arrLen; x++)
+		{
+			int num = dis(gen);
+			arr[count] = num;
+			count++;
+			map.checkCorrectness();
+			for (int x = 0; x < count; x++) {
+				std::cout << arr[x] << ", ";
+			}
+			std::cout << std::endl;
+			map.add(num, Null::value());
+			map.print();
+		}
+		map.print();
+		for (int x = 0; x < arrLen; x++)
+		{
+			int num = arr[x];
+			std::cout << "DELETE: " << num << std::endl;
+			map.remove(num);
+			map.checkCorrectness();
+			map.print();
+		}
+	}
+
+//	int arr[] = {33, 98, 74, 98, 18, 52, 94, 29, 4, 82, 64, 11};
+//	for (int x = 0; x < 11; x++) {
+//		int num = arr[x];
 //		map.add(num, Null::value());
 //		map.print();
 //	}
-
-	int arr[] = {33, 98, 74, 98, 18, 52, 94, 29, 4, 82, 64, 11};
-	for (int x = 0; x < 11; x++) {
-		int num = arr[x];
-		map.add(num, Null::value());
-		map.print();
-	}
-
-	map.add(11, Null::value());
-	map.print();
+//
+//	map.add(11, Null::value());
+//	map.print();
 
 
 
