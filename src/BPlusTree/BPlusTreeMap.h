@@ -285,7 +285,7 @@ private:
 		auto current = std::find(way.begin(), way.end(), leafNode);
 		if (current == way.end())
 			throw std::runtime_error("Unexpected (leafNodeChangedMinElem)");
-		Node *child = *current;
+		Node* child = *current;
 		while (current != way.begin())
 		{
 			child = *current;
@@ -1066,6 +1066,112 @@ public:
 			list.emplace_back(entry->key, entry->value);
 			index++;
 		}
+	}
+
+	class BPlusTreeMapIterator : public Map<K, V>::Iterator
+	{
+	private:
+
+		friend class BPlusTreeMap;
+
+		BPlusTreeMap<K, V>& map;
+		const Node* node;
+		const Entry* entry;
+		int entryIndex;
+
+		BPlusTreeMapIterator(bool isBegin, BPlusTreeMap<K, V>& map) : map(map)
+		{
+			Node* current = map.root;
+			while (!current->isLeaf())
+			{
+				if (isBegin)
+					current = current->children[0];
+				else
+					current = current->children[current->entries->getSize()];
+			}
+			node = current;
+			if (isBegin)
+			{
+				entryIndex = 0;
+				entry = node->entries->get(0);
+			}
+			else
+			{
+				entryIndex = node->entries->getSize() - 1;
+				entry = node->entries->get(entryIndex);
+			}
+		}
+
+	public:
+
+		BPlusTreeMapIterator& operator+=(size_t count) override
+		{
+			while (count > 0)
+			{
+				if (entryIndex + 1 == node->entries->getSize() && node->right == nullptr)
+					break;
+				if (entryIndex + 1 != node->entries->getSize())
+				{
+					entryIndex++;
+					entry = node->entries->get(entryIndex);
+				}
+				else
+				{
+					node = node->right;
+					entry = node->entries->get(0);
+					entryIndex = 0;
+				}
+				count--;
+			}
+			return *this;
+		}
+
+		BPlusTreeMapIterator& operator-=(size_t count) override
+		{
+			while (count > 0)
+			{
+				if (entryIndex == 0 && node->left == nullptr)
+					break;
+				if (entryIndex != 0)
+				{
+					entryIndex--;
+					entry = node->entries->get(entryIndex);
+				}
+				else
+				{
+					node = node->left;
+					entryIndex = node->entries->getSize() - 1;
+					entry = node->entries->get(entryIndex);
+				}
+				count--;
+			}
+			return *this;
+		}
+
+//		bool operator==(const BPlusTreeMap& other) const override
+//		{
+//			return entry == other.entry;
+//		}
+
+		int getDepth() const override
+		{
+			return map.depth_;
+		}
+
+		typename Map<K, V>::Pair getPair() const override
+		{
+			return std::move(typename Map<K, V>::Pair(entry->key, entry->value));
+		}
+	};
+
+	typename BPlusTreeMap<K, V>::BPlusTreeMapIterator begin()
+	{
+		return std::move(BPlusTreeMapIterator(true, *this));
+	}
+
+	typename BPlusTreeMap<K, V>::BPlusTreeMapIterator end()
+	{
+		return std::move(BPlusTreeMapIterator(false, *this));
 	}
 
 	void print()

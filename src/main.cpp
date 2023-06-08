@@ -21,9 +21,9 @@ int main()
 	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
 
 
-	while (true) {
+//	while (true) {
 		BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
-		int arrLen = 1000;
+		int arrLen = 30;
 		int arr[arrLen];
 		int count = 0;
 		for (int x = 0; x < arrLen; x++)
@@ -40,15 +40,21 @@ int main()
 			map.print();
 		}
 		map.print();
+		auto iter = map.begin();
 		for (int x = 0; x < arrLen; x++)
 		{
-			int num = arr[x];
-			std::cout << "DELETE: " << num << std::endl;
-			map.remove(num);
-			map.checkCorrectness();
-			map.print();
+			std::cout << iter.getPair().getKey() << "; ";
+			iter += 1;
 		}
-	}
+//		for (int x = 0; x < arrLen; x++)
+//		{
+//			int num = arr[x];
+//			std::cout << "DELETE: " << num << std::endl;
+//			map.remove(num);
+//			map.checkCorrectness();
+//			map.print();
+//		}
+//	}
 
 //	int arr[] = {33, 98, 74, 98, 18, 52, 94, 29, 4, 82, 64, 11};
 //	for (int x = 0; x < 11; x++) {

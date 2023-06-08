@@ -37,6 +37,23 @@ public:
 		}
 	};
 
+	class Iterator
+	{
+	public:
+
+		virtual Iterator& operator+=(size_t) = 0;
+
+		virtual Iterator& operator-=(size_t) = 0;
+
+//		virtual bool operator==(const Iterator&) const = 0;
+
+		virtual int getDepth() const = 0;
+
+		virtual typename Map<K, V>::Pair getPair() const = 0;
+
+		virtual ~Iterator() = default;
+	};
+
 	virtual bool add(const K& key, const V& value) = 0;
 
 	virtual std::optional<V> get(const K& key) = 0;
@@ -61,6 +78,7 @@ private:
 	Null()
 	{
 	}
+
 public:
 
 	static const Null& value()
