@@ -1,6 +1,6 @@
 #include "memory.h"
 
-memory::~memory()
+Memory::~Memory()
 {
 
 }

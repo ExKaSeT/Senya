@@ -2,7 +2,6 @@
 #include <random>
 #include "BPlusTree/BPlusTreeMap.h"
 #include "./allocators/default_memory.h"
-#include "allocators/memory_3.h"
 
 
 int cmp(int const& a, int const& b)
@@ -18,8 +17,7 @@ int main()
 
 //	while (true) {
 //		BPlusTreeMap<int, Null> map();
-		auto* map = BPlusTreeMap<int, Null>::create(3, 3, cmp,
-				std::make_shared<memory_3>(100000000, memory_3::allocation_method::worst));
+		auto* map = BPlusTreeMap<int, Null>::create(3, 3, cmp, std::make_shared<DefaultMemory>());
 		int arrLen = 10000;
 		int arr[arrLen];
 		int count = 0;
