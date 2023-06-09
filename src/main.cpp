@@ -1,8 +1,6 @@
 #include <iostream>
 #include <random>
 #include "BPlusTree/BPlusTreeMap.h"
-#include "BPlusTree/SortedArray.h"
-#include "../lab_5/1/src/logger_builder_concrete.h"
 #include "./allocators/default_memory.h"
 
 
@@ -15,15 +13,12 @@ int main()
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(1, 1000);
-
-	logger_builder* loggerBuilder = new logger_builder_concrete();
-	logger* logger = loggerBuilder->add_stream("console", logger::severity::trace)->construct();
-
+	std::uniform_int_distribution<> dis(-10000, 10000);
 
 //	while (true) {
-		BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
-		int arrLen = 30;
+//		BPlusTreeMap<int, Null> map();
+		auto* map = BPlusTreeMap<int, Null>::create(3, 3, cmp, std::make_shared<DefaultMemory>());
+		int arrLen = 10000;
 		int arr[arrLen];
 		int count = 0;
 		for (int x = 0; x < arrLen; x++)
@@ -31,21 +26,25 @@ int main()
 			int num = dis(gen);
 			arr[count] = num;
 			count++;
-			map.checkCorrectness();
-			for (int x = 0; x < count; x++) {
-				std::cout << arr[x] << ", ";
-			}
-			std::cout << std::endl;
-			map.add(num, Null::value());
-			map.print();
+//			map->checkCorrectness();
+//			for (int x = 0; x < count; x++) {
+//				std::cout << arr[x] << ", ";
+//			}
+//			std::cout << std::endl;
+			map->add(num, Null::value());
+//			map->print();
 		}
-		map.print();
-		auto iter = map.begin();
-		for (int x = 0; x < arrLen; x++)
-		{
-			std::cout << iter.getPair().getKey() << "; ";
-			iter += 1;
-		}
+//		map->print();
+//		auto iter = map->begin();
+//		while (true)
+//		{
+//			std::cout << iter.getPair().getKey() << "; ";
+//			if (iter == map->end())
+//				break;
+//			iter += 1;
+//		}
+		map->filePrint("map.txt");
+		map->destroy();
 //		for (int x = 0; x < arrLen; x++)
 //		{
 //			int num = arr[x];

@@ -8,9 +8,12 @@
 #include <set>
 #include <optional>
 #include <iostream>
+#include <sstream>
 #include "SortedArray.h"
 #include "../allocators/default_memory.h"
 #include "../Map.h"
+#include "../logger/logger_builder.h"
+#include "../logger/logger_builder_concrete.h"
 
 
 template<typename K, typename V>
@@ -28,6 +31,7 @@ private:
 	const std::function<int(const K&, const K&)> compare;
 	int size_ = 0;
 	int depth_ = 0;
+	bool storedInHeap = false;
 
 	struct Entry
 	{
@@ -130,6 +134,15 @@ private:
 		root = createNode(true);
 	}
 
+	void* operator new(size_t size, void* ptr)
+	{
+		return ptr;
+	}
+
+	static void operator delete(void* ptr)
+	{
+	}
+
 public:
 	explicit BPlusTreeMap(int degree, int leafCapacity, const std::function<int(const K&, const K&)>& comparator,
 			const std::shared_ptr<Memory>& alloc) : degree(degree), compare(comparator), alloc(alloc),
@@ -143,6 +156,29 @@ public:
 			degree(degree), alloc(std::make_shared<DefaultMemory>()), compare(comparator), leafCapacity(leafCapacity)
 	{
 		init();
+	}
+
+	inline static BPlusTreeMap* create(int degree, int leafCapacity,
+			const std::function<int(const K&, const K&)>& comparator, const std::shared_ptr<Memory>& alloc)
+	{
+		auto* mem = alloc->allocate(sizeof(BPlusTreeMap));
+		auto* map = new(mem) BPlusTreeMap(degree, leafCapacity, comparator, alloc);
+		map->storedInHeap = true;
+		return map;
+	}
+
+	inline static BPlusTreeMap* create(int degree, int leafCapacity,
+			const std::function<int(const K&, const K&)>& comparator)
+	{
+		return create(degree, leafCapacity, comparator, std::make_shared<DefaultMemory>());
+	}
+
+	void destroy()
+	{
+		if (!storedInHeap)
+			return;
+		this->~BPlusTreeMap();
+		this->alloc->deallocate(this);
 	}
 
 	~BPlusTreeMap() override
@@ -175,6 +211,10 @@ public:
 				break;
 		}
 	}
+
+	void* operator new(size_t size) = delete;
+
+	BPlusTreeMap() = delete;
 
 	BPlusTreeMap(BPlusTreeMap const&) = delete;
 
@@ -1148,10 +1188,15 @@ public:
 			return *this;
 		}
 
-//		bool operator==(const BPlusTreeMap& other) const override
-//		{
-//			return entry == other.entry;
-//		}
+		bool operator==(const BPlusTreeMapIterator& other) const
+		{
+			return entry == other.entry;
+		}
+
+		bool operator!=(const BPlusTreeMapIterator& other) const
+		{
+			return entry != other.entry;
+		}
 
 		int getDepth() const override
 		{
@@ -1176,40 +1221,50 @@ public:
 
 	void print()
 	{
-		printRec(root);
+		printRec(root, std::cout);
+	}
+
+	void filePrint(const std::string& filename)
+	{
+		std::stringstream ss;
+		ss << std::endl;
+		printRec(root, ss);
+		logger_builder* loggerBuilder = new logger_builder_concrete();
+		logger* logger = loggerBuilder->add_stream(filename, logger::severity::trace)->construct();
+		logger->log(ss.str(), logger::severity::trace);
+		delete logger;
+		delete loggerBuilder;
 	}
 
 private:
-	void printRec(Node* node, int depth = 0)
+
+	void printRec(Node* node, std::ostream& stream, int depth = 0)
 	{
 		if (node == nullptr)
 		{
 			return;
 		}
-
-		std::cout << std::string(depth, '\t');
-
+		stream << std::string(depth, '\t');
 		if (node->isLeaf())
 		{
 			for (int i = 0; i < node->entries->getSize(); i++)
 			{
-				std::cout << *(node->entries->get(i)->key) << " ";
+				stream << *(node->entries->get(i)->key) << " ";
 			}
-			std::cout << std::endl;
+			stream << std::endl;
 		}
 		else
 		{
 			for (int i = 0; i < node->entries->getSize(); i++)
 			{
-				std::cout << *(node->entries->get(i)->key) << " ";
+				stream << *(node->entries->get(i)->key) << " ";
 			}
-			std::cout << std::endl;
-
+			stream << std::endl;
 			for (int i = 0; i < node->entries->getSize(); i++)
 			{
-				printRec(node->children[i], depth + 1);
+				printRec(node->children[i], stream, depth + 1);
 			}
-			printRec(node->children[node->entries->getSize()], depth + 1);
+			printRec(node->children[node->entries->getSize()], stream, depth + 1);
 		}
 	}
 };

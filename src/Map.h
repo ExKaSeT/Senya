@@ -45,8 +45,6 @@ public:
 
 		virtual Iterator& operator-=(size_t) = 0;
 
-//		virtual bool operator==(const Iterator&) const = 0;
-
 		virtual int getDepth() const = 0;
 
 		virtual typename Map<K, V>::Pair getPair() const = 0;
