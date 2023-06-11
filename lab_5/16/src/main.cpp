@@ -2,6 +2,7 @@
 #include <random>
 #include "BPlusTree/BPlusTreeMap.h"
 #include "./allocators/default_memory.h"
+#include "allocators/memory_3.h"
 
 
 int cmp(int const& a, int const& b)
@@ -13,16 +14,17 @@ int main()
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(-10000, 10000);
+	std::uniform_int_distribution<> dis(0, 10000);
 
 //	while (true) {
-//		BPlusTreeMap<int, Null> map();
-		auto* map = BPlusTreeMap<int, Null>::create(3, 3, cmp, std::make_shared<DefaultMemory>());
-		int arrLen = 10000;
+		BPlusTreeMap<int, Null> map(3, 3, cmp, std::make_shared<DefaultMemory>());
+		int arrLen = 100;
 		int arr[arrLen];
 		int count = 0;
 		for (int x = 0; x < arrLen; x++)
 		{
+			auto map1(map);
+			map = std::move(map1);
 			int num = dis(gen);
 			arr[count] = num;
 			count++;
@@ -31,7 +33,8 @@ int main()
 //				std::cout << arr[x] << ", ";
 //			}
 //			std::cout << std::endl;
-			map->add(num, Null::value());
+			map.add(num, Null::value());
+            map.print();
 //			map->print();
 		}
 //		map->print();
@@ -43,8 +46,8 @@ int main()
 //				break;
 //			iter += 1;
 //		}
-		map->filePrint("map.txt");
-		map->destroy();
+//		map->filePrint("map.txt");
+
 //		for (int x = 0; x < arrLen; x++)
 //		{
 //			int num = arr[x];

@@ -200,7 +200,14 @@ public:
 				throw;
 			}
 		}
-		else m_data = reinterpret_cast<char*>(alloc->allocate(data_size));
+		else
+            m_data = reinterpret_cast<char*>(alloc->allocate(data_size));
+
+        if (m_data == nullptr)
+        {
+            this->log("Alloc error", logger::severity::error);
+            throw std::bad_alloc();
+        }
 
 		char* current = m_data;
 

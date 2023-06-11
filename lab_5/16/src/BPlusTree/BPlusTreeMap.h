@@ -20,15 +20,15 @@ template<typename K, typename V>
 class BPlusTreeMap : public Map<K, V>
 {
 private:
-	const int degree;
-	const int leafCapacity;
-	const int minLeafSize = (leafCapacity + 1) / 2;
-	const int maxChildCount = degree;
-	const int maxKeysCount = degree - 1;
-	const int minChildCount = (maxChildCount + 1) / 2;
-	const int minKeysCount = minChildCount - 1;
-	const std::shared_ptr<Memory> alloc;
-	const std::function<int(const K&, const K&)> compare;
+	int degree;
+	int leafCapacity;
+	int minLeafSize = (leafCapacity + 1) / 2;
+	int maxChildCount = degree;
+	int maxKeysCount = degree - 1;
+	int minChildCount = (maxChildCount + 1) / 2;
+	int minKeysCount = minChildCount - 1;
+	std::shared_ptr<Memory> alloc;
+	std::function<int(const K&, const K&)> compare;
 	int size_ = 0;
 	int depth_ = 0;
 	bool storedInHeap = false;
@@ -90,6 +90,7 @@ private:
 	Node* createNode(bool isLeaf)
 	{
 		Node* node = reinterpret_cast<Node*>(alloc->allocate(sizeof(Node)));
+		new(node) Node;
 		node->left = nullptr;
 		node->right = nullptr;
 		node->entries = nullptr;
@@ -110,6 +111,22 @@ private:
 				node->children[x] = nullptr;
 		}
 		return node;
+	}
+
+	Node* copyNode(Node* node)
+	{
+		auto* newNode = createNode(node->isLeaf());
+		for (int x = 0; x < node->entries->getSize(); x++)
+		{
+			Entry* entry = node->entries->get(x);
+			Entry* copyEntry;
+			if (entry->value == nullptr)
+				copyEntry = createEntry(*(entry->key));
+			else
+				copyEntry = createEntry(*(entry->key), *(entry->value));
+			newNode->entries->add(copyEntry);
+		}
+		return newNode;
 	}
 
 	void destroyNode(Node* node)
@@ -183,6 +200,58 @@ public:
 
 	~BPlusTreeMap() override
 	{
+		if (root != nullptr)
+			destroyTree(root);
+	}
+
+	void* operator new(size_t size) = delete;
+
+	BPlusTreeMap() = delete;
+
+	Node* copyTree(Node* root)
+	{
+		Node* newRoot = copyNode(root);
+		if (root->isLeaf())
+			return newRoot;
+		Node* currentInNew = newRoot;
+		Node* current = root->children[0];
+		while (true)
+		{
+			Node* toCopy = current;
+			Node* prevCopy = nullptr;
+			Node* newParent = currentInNew;
+			int childIndex = 0;
+			while (toCopy != nullptr)
+			{
+				Node* right = toCopy->right;
+				Node* copy = copyNode(toCopy);
+				if (prevCopy != nullptr)
+				{
+					copy->left = prevCopy;
+					prevCopy->right = copy;
+				}
+				if (childIndex > newParent->entries->getSize())
+				{
+					childIndex = 0;
+					newParent = newParent->right;
+				}
+				newParent->children[childIndex] = copy;
+				childIndex++;
+				prevCopy = copy;
+				toCopy = right;
+			}
+			if (current->isLeaf())
+			{
+				break;
+			}
+			current = current->children[0];
+			currentInNew = currentInNew->children[0];
+		}
+		return newRoot;
+	}
+
+	void destroyTree(Node* root)
+	{
 		Node* current = root;
 		bool isLeaf = false;
 		while (true)
@@ -212,17 +281,70 @@ public:
 		}
 	}
 
-	void* operator new(size_t size) = delete;
+	BPlusTreeMap(BPlusTreeMap const& other) :
+			degree(other.degree), leafCapacity(other.leafCapacity),
+			minLeafSize(other.minLeafSize), maxChildCount(other.maxChildCount),
+			maxKeysCount(other.maxKeysCount), minChildCount(other.minChildCount),
+			minKeysCount(other.minKeysCount), alloc(other.alloc),
+			compare(other.compare),
+			size_(other.size_), depth_(other.depth_), storedInHeap(other.storedInHeap)
+	{
+		root = copyTree(other.root);
+	}
 
-	BPlusTreeMap() = delete;
+	BPlusTreeMap& operator=(BPlusTreeMap const& other)
+	{
+		if (this == &other)
+			return *this;
+		degree = other.degree;
+		leafCapacity = other.leafCapacity;
+		minLeafSize = other.minLeafSize;
+		maxChildCount = other.maxChildCount;
+		maxKeysCount = other.maxKeysCount;
+		minChildCount = other.minChildCount;
+		minKeysCount = other.minKeysCount;
+		alloc = other.alloc;
+		compare = other.compare;
+		size_ = other.size_;
+		depth_ = other.depth_;
+		storedInHeap = other.storedInHeap;
+		if (root != nullptr)
+			destroyTree(root);
+		root = copyTree(other.root);
+		return *this;
+	}
 
-	BPlusTreeMap(BPlusTreeMap const&) = delete;
+	BPlusTreeMap(BPlusTreeMap&& other) noexcept:
+			degree(other.degree), leafCapacity(other.leafCapacity),
+			minLeafSize(other.minLeafSize), maxChildCount(other.maxChildCount),
+			maxKeysCount(other.maxKeysCount), minChildCount(other.minChildCount),
+			minKeysCount(other.minKeysCount), alloc(other.alloc),
+			compare(other.compare), size_(other.size_), depth_(other.depth_),
+			storedInHeap(other.storedInHeap), root(other.root)
+	{
+		other.root = nullptr;
+	}
 
-	BPlusTreeMap(BPlusTreeMap&&) = delete;
-
-	BPlusTreeMap operator=(BPlusTreeMap const&) = delete;
-
-	BPlusTreeMap operator=(BPlusTreeMap&&) = delete;
+	BPlusTreeMap& operator=(BPlusTreeMap&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+		degree = other.degree;
+		leafCapacity = other.leafCapacity;
+		minLeafSize = other.minLeafSize;
+		maxChildCount = other.maxChildCount;
+		maxKeysCount = other.maxKeysCount;
+		minChildCount = other.minChildCount;
+		minKeysCount = other.minKeysCount;
+		alloc = other.alloc;
+		compare = other.compare;
+		size_ = other.size_;
+		depth_ = other.depth_;
+		storedInHeap = other.storedInHeap;
+		root = other.root;
+		other.root = nullptr;
+		return *this;
+	}
 
 private:
 	// returns new node (with more elem if size_ is even) (add != const)

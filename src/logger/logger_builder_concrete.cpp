@@ -2,11 +2,6 @@
 #include <sstream>
 #include "logger_builder_concrete.h"
 #include "logger_concrete.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-using boost::property_tree::ptree;
-
 
 logger_builder* logger_builder_concrete::add_stream(
 	std::string const& path,
@@ -32,14 +27,17 @@ logger* logger_builder_concrete::file_construct(const std::string& filename)
 
 	logger_builder* builder = new logger_builder_concrete();
 
-	ptree root;
-	read_json(filename, root);
+	std::string line;
+	while (std::getline(file, line))
+	{
+		std::stringstream ss(line);
+		std::string path_str, severity_str;
+		std::getline(ss, path_str, ';');
+		std::getline(ss, severity_str);
 
-	for (const auto& [path_str, severity_str] : root) {
-		logger::severity severity = logger_concrete::severityFromString(severity_str.get_value<std::string>());
+		logger::severity severity = logger_concrete::severityFromString(severity_str);
 		builder->add_stream(path_str, severity);
 	}
-
 	auto logger = builder->construct();
 	delete builder;
 	return logger;
