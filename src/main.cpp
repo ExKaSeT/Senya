@@ -13,7 +13,7 @@ int main()
 			->construct();
 
 	int numCount = 30;
-	memory_3 memory3(150 * sizeof(int), memory_3::allocation_method::worst, nullptr, logger);
+	memory_3 memory3(150 * sizeof(int), memory_3::allocation_method::best, nullptr, logger);
 
 	// Создание генератора случайных чисел
 	std::random_device rd;

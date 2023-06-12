@@ -17,154 +17,8 @@ public:
 	};
 
 private:
-	// method | alloc_ptr | logger_ptr | size_t
+	// method | alloc_ptr | logger_ptr | first_available_ptr
 	char* m_data;
-
-	void* first_fit(size_t target_size) const
-	{
-		char* current = m_data;
-		current += (sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
-		size_t m_size = *reinterpret_cast<size_t*>(current);
-		current += sizeof(size_t);
-		while (current < m_data + m_size)
-		{
-			auto* is_free = reinterpret_cast<bool*>(current);
-			auto* b_size = reinterpret_cast<size_t*>(current + sizeof(bool));
-			if ((*is_free) && *b_size >= target_size)
-			{
-				*is_free = false;
-				char* ptr = current + sizeof(bool) + sizeof(size_t);
-				block_split(ptr, target_size);
-				return ptr;
-			}
-			current += *b_size + sizeof(bool) + sizeof(size_t);
-		}
-		return nullptr;
-	}
-
-	void* best_fit(size_t target_size) const
-	{
-		size_t min_ok = SIZE_MAX;
-		char* ptr = nullptr;
-		char* current = m_data;
-		current += (sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
-		size_t m_size = *reinterpret_cast<size_t*>(current);
-		current += sizeof(size_t);
-		while (current < m_data + m_size)
-		{
-			auto* is_free = reinterpret_cast<bool*>(current);
-			auto* b_size = reinterpret_cast<size_t*>(current + sizeof(bool));
-			if (*is_free && *b_size >= target_size)
-			{
-				if (min_ok > *b_size)
-				{
-					min_ok = *b_size;
-					ptr = current + sizeof(bool) + sizeof(size_t);
-				}
-			}
-			current += sizeof(bool) + sizeof(size_t) + *b_size;
-		}
-		if (ptr == nullptr)
-			return ptr;
-		auto* is_free = reinterpret_cast<bool*>(ptr - sizeof(bool) - sizeof(size_t));
-		*is_free = false;
-		block_split(ptr, target_size);
-		return ptr;
-	}
-
-	void* worst_fit(size_t target_size) const
-	{
-		size_t max_ok = 0;
-		char* ptr = nullptr;
-		char* current = m_data;
-		current += (sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
-		size_t m_size = *reinterpret_cast<size_t*>(current);
-		current += sizeof(size_t);
-		while (current < m_data + m_size)
-		{
-			auto* is_free = reinterpret_cast<bool*>(current);
-			auto* b_size = reinterpret_cast<size_t*>(current + sizeof(bool));
-			if (*is_free && *b_size >= target_size)
-			{
-				if (max_ok < *b_size)
-				{
-					max_ok = *b_size;
-					ptr = current + sizeof(bool) + sizeof(size_t);
-				}
-			}
-			current += sizeof(bool) + sizeof(size_t) + *b_size;
-		}
-		if (ptr == nullptr)
-			return ptr;
-		auto* is_free = reinterpret_cast<bool*>(ptr - sizeof(bool) - sizeof(size_t));
-		*is_free = false;
-		block_split(ptr, target_size);
-		return ptr;
-	}
-
-	void merge_free() const
-	{
-		char* current = m_data;
-		current += (sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
-		size_t m_size = *(reinterpret_cast<size_t*>(current));
-		current += sizeof(size_t);
-		auto* prev_is_free = reinterpret_cast<bool*>(current);
-		auto* prev_b_size = reinterpret_cast<size_t*>(current + sizeof(bool));
-		if (current + *prev_b_size + sizeof(size_t) + sizeof(bool) < m_data + m_size)
-			current += (*prev_b_size + sizeof(size_t) + sizeof(bool));
-		else
-			return;
-		auto* is_free = reinterpret_cast<bool*>(current);
-		auto* b_size = reinterpret_cast<size_t*>(current + sizeof(bool));
-		current += (sizeof(bool) + sizeof(size_t) + *b_size);
-		while (current + sizeof(bool) < m_data + m_size)
-		{
-			auto* next_is_free = reinterpret_cast<bool*>(current);
-			auto* next_b_size = reinterpret_cast<size_t*>(current + sizeof(bool));
-			if (*is_free && (*prev_is_free || *next_is_free))
-			{
-				if (*next_is_free)
-				{
-					*b_size += *next_b_size + sizeof(size_t) + sizeof(bool);
-				}
-				if (*prev_is_free)
-				{
-					*prev_b_size += *b_size + sizeof(size_t) + sizeof(bool);
-					b_size = next_b_size;
-					is_free = next_is_free;
-				}
-				if (*next_is_free && *prev_is_free)
-				{
-					b_size = reinterpret_cast<size_t*>(current + 2 * sizeof(bool) + sizeof(size_t) + *next_b_size);
-					is_free = reinterpret_cast<bool*>(current + sizeof(bool) + sizeof(size_t) + *next_b_size);
-					*next_b_size += (sizeof(size_t) + sizeof(bool) + *b_size);
-				}
-			}
-			else
-			{
-				prev_b_size = b_size;
-				prev_is_free = is_free;
-				b_size = next_b_size;
-				is_free = next_is_free;
-			}
-			current += *next_b_size + sizeof(size_t) + sizeof(bool);
-		}
-	}
-
-	void block_split(char* block_ptr, size_t target_size) const
-	{
-		if (block_ptr == nullptr)
-			return;
-		auto* b_size = reinterpret_cast<size_t*>(block_ptr - sizeof(size_t));
-		if (*b_size > target_size + sizeof(bool) + sizeof(size_t))
-		{
-			auto* next_is_free = reinterpret_cast<bool*>(block_ptr + target_size);
-			*next_is_free = true;
-			auto* next_size = reinterpret_cast<size_t*>(next_is_free + sizeof(bool));
-			*next_size = *b_size - target_size - sizeof(bool) - sizeof(size_t);
-			*b_size = target_size;
-		}
-	}
 
 	bool has_logger() const
 	{
@@ -184,10 +38,58 @@ private:
 		log_->log(str, severity);
 	}
 
+	size_t get_service_block_size() const
+	{
+		return sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*) + sizeof(void**);
+	}
+
+	allocation_method get_alloc_method() const
+	{
+		return *reinterpret_cast<allocation_method*>(m_data);
+	}
+
+	void** get_first_block_address_address() const
+	{
+		return reinterpret_cast<void**>(m_data + sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
+	}
+
+	void* get_first_block_address() const
+	{
+		return *get_first_block_address_address();
+	}
+
+	size_t get_available_block_service_size() const
+	{
+		return sizeof(size_t) + sizeof(void**);
+	};
+
+	size_t get_occupied_block_service_size() const
+	{
+		return sizeof(size_t);
+	};
+
+	size_t get_block_size(void* block_ptr) const
+	{
+		return *reinterpret_cast<size_t*>(block_ptr);
+	}
+
+	void** get_available_next_block_address_address(void* available_block_ptr) const
+	{
+		return reinterpret_cast<void**>(reinterpret_cast<char*>(available_block_ptr) + sizeof(size_t));
+	}
+
+	void* get_available_next_block_address(void* available_block_ptr) const
+	{
+		return *get_available_next_block_address_address(available_block_ptr);
+	}
+
 public:
 
 	memory_3(size_t data_size, allocation_method method, memory* alloc = nullptr, logger* log = nullptr)
 	{
+		if (data_size < get_service_block_size() + sizeof(size_t) + sizeof(void*))
+			throw std::bad_alloc();
+
 		if (alloc == nullptr)
 		{
 			try
@@ -201,13 +103,13 @@ public:
 			}
 		}
 		else
-            m_data = reinterpret_cast<char*>(alloc->allocate(data_size));
+			m_data = reinterpret_cast<char*>(alloc->allocate(data_size));
 
-        if (m_data == nullptr)
-        {
-            this->log("Alloc error", logger::severity::error);
-            throw std::bad_alloc();
-        }
+		if (m_data == nullptr)
+		{
+			this->log("Alloc error", logger::severity::error);
+			throw std::bad_alloc();
+		}
 
 		char* current = m_data;
 
@@ -223,16 +125,19 @@ public:
 		*log_ = log;
 		current += sizeof(logger*);
 
-		auto* m_size = reinterpret_cast<size_t*>(current);
-		*m_size = (data_size - (sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*) + sizeof(size_t)));
-		current += sizeof(size_t);
+		auto** first_available_block = reinterpret_cast<void**>(current);
+		current += sizeof(void*);
+		*first_available_block = reinterpret_cast<void*>(current);
 
-		auto* is_free = reinterpret_cast<bool*>(current);
-		*is_free = true;
-		current += sizeof(bool);
+		size_t free_size;
+		free_size = data_size - get_service_block_size();
 
 		auto* b_size = reinterpret_cast<size_t*>(current);
-		*b_size = *m_size - (sizeof(bool) + sizeof(size_t));
+		*b_size = free_size - (sizeof(size_t) + sizeof(void*));
+		current += sizeof(size_t);
+
+		auto** next_ptr = reinterpret_cast<void**>(current);
+		*next_ptr = nullptr;
 
 		if (log != nullptr)
 		{
@@ -254,56 +159,171 @@ public:
 			m_alloc->deallocate(m_data);
 	}
 
-	void* allocate(size_t target_size) const override
+	void* allocate(size_t requested_size) const override
 	{
-		allocation_method m_method = *reinterpret_cast<allocation_method*>(m_data);
-		void* ptr;
-		if (m_method == first)
-			ptr = first_fit(target_size);
-		else if (m_method == best)
-			ptr = best_fit(target_size);
-		else
-			ptr = worst_fit(target_size);
+		if (requested_size < sizeof(void*))
+			requested_size = sizeof(void*);
 
-		if (this->has_logger())
+		void* previous_block = nullptr;
+		void* current_block = get_first_block_address();
+		void* target_block = nullptr;
+		void* previous_to_target_block = nullptr;
+		void* next_to_target_block = nullptr;
+		auto alloc_method = get_alloc_method();
+
+		while (current_block != nullptr)
 		{
-			std::stringstream log_stream;
-			if (ptr == nullptr)
-				log_stream << "Not enough memory";
-			else if (m_method == first)
-				log_stream << "Allocated [ FIRST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
-			else if (m_method == best)
-				log_stream << "Allocated [ BEST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
-			else
-				log_stream << "Allocated [ WORST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
-			log(log_stream.str(), logger::severity::information);
+			auto current_block_size = get_block_size(current_block);
+			auto* next_block = get_available_next_block_address(current_block);
+
+			if (current_block_size - get_available_block_service_size() >=
+				requested_size + get_occupied_block_service_size())
+			{
+				if (alloc_method == first ||
+					alloc_method == best &&
+					(target_block == nullptr || current_block_size < get_block_size(target_block)) ||
+					alloc_method == worst &&
+					(target_block == nullptr || current_block_size > get_block_size(target_block)))
+				{
+					previous_to_target_block = previous_block;
+					target_block = current_block;
+					next_to_target_block = next_block;
+				}
+
+				if (alloc_method == first)
+					break;
+			}
+			previous_block = current_block;
+			current_block = next_block;
 		}
 
-		return ptr;
+		if (target_block == nullptr)
+		{
+			throw std::runtime_error("No available memory");
+		}
+
+		if (get_block_size(target_block) - get_occupied_block_service_size() - requested_size <
+			get_available_block_service_size())
+		{
+			auto requested_size_overriden = get_block_size(target_block) - get_occupied_block_service_size() -
+											get_available_block_service_size();
+			requested_size = requested_size_overriden;
+		}
+
+		void* update_next_block_to_previous;
+
+		if (requested_size == get_block_size(target_block) - get_occupied_block_service_size())
+		{
+			update_next_block_to_previous = next_to_target_block;
+		}
+		else
+		{
+			update_next_block_to_previous = reinterpret_cast<void*>
+			(reinterpret_cast<unsigned char*>(target_block) + get_occupied_block_service_size() + requested_size);
+
+			auto* target_block_leftover_size = reinterpret_cast<size_t*>(update_next_block_to_previous);
+			*target_block_leftover_size =
+					get_block_size(target_block) - get_occupied_block_service_size() - requested_size;
+
+			auto* target_block_leftover_next_block_address = reinterpret_cast<void**>(target_block_leftover_size + 1);
+			*target_block_leftover_next_block_address = next_to_target_block;
+		}
+
+		previous_to_target_block == nullptr
+		? *get_first_block_address_address() = update_next_block_to_previous
+		: *reinterpret_cast<void**>
+		(reinterpret_cast<unsigned char*>(previous_to_target_block) + sizeof(size_t)) = update_next_block_to_previous;
+
+		auto* target_block_size_address = reinterpret_cast<size_t*>(target_block);
+		*target_block_size_address = requested_size;
+
+		return reinterpret_cast<void*>(target_block_size_address + 1);
 	}
+
+//	void* allocate(size_t target_size) const
+//	{
+//		allocation_method m_method = *reinterpret_cast<allocation_method*>(m_data);
+//		void* ptr;
+//		if (m_method == first)
+//			ptr = first_fit(target_size);
+//		else if (m_method == best)
+//			ptr = best_fit(target_size);
+//		else
+//			ptr = worst_fit(target_size);
+//
+//		if (this->has_logger())
+//		{
+//			std::stringstream log_stream;
+//			if (ptr == nullptr)
+//				log_stream << "Not enough memory";
+//			else if (m_method == first)
+//				log_stream << "Allocated [ FIRST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
+//			else if (m_method == best)
+//				log_stream << "Allocated [ BEST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
+//			else
+//				log_stream << "Allocated [ WORST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
+//			log(log_stream.str(), logger::severity::information);
+//		}
+//		return ptr;
+//	}
 
 	void deallocate(void* target_to_dealloc) const override
 	{
-		if (target_to_dealloc == nullptr)
-			return;
-		char* current = reinterpret_cast<char*>(target_to_dealloc);
-		auto* is_free = reinterpret_cast<bool*>(current - sizeof(size_t) - sizeof(bool));
-		*is_free = true;
+		*const_cast<void**>(&target_to_dealloc) = reinterpret_cast<void*>
+		(reinterpret_cast<size_t*>(target_to_dealloc) - 1);
 
 		if (this->has_logger())
 		{
-			size_t b_size = *reinterpret_cast<size_t*>(current - sizeof(size_t));
+			size_t block_size = *reinterpret_cast<size_t*>(target_to_dealloc);
 			std::stringstream log_stream;
-			log_stream << "Deallocated [ " << current - m_data << " ]: ";
-			auto* byte_ptr = reinterpret_cast<unsigned char*>(current);
-			for (auto i = 0; i < b_size; i++)
+			char* block_data = reinterpret_cast<char*>(target_to_dealloc) + sizeof(size_t);
+			log_stream << "Deallocated [ " << block_data - m_data << " ]: ";
+			auto* byte_ptr = reinterpret_cast<unsigned char*>(block_data);
+			for (auto i = 0; i < block_size; i++)
 			{
 				log_stream << static_cast<unsigned short>(byte_ptr[i]) << " ";
 			}
 			log(log_stream.str(), logger::severity::information);
 		}
 
-		merge_free();
+		void* previous_block = nullptr;
+		void* current_block = get_first_block_address();
+		if (current_block == nullptr)
+		{
+			*get_first_block_address_address() = target_to_dealloc;
+
+			auto* block_to_deallocate_size = reinterpret_cast<size_t*>(target_to_dealloc);
+			*block_to_deallocate_size -= sizeof(void*);
+
+			*reinterpret_cast<void**>(block_to_deallocate_size + 1) = nullptr;
+
+			return;
+		}
+		while (current_block != nullptr)
+		{
+			if (target_to_dealloc < current_block)
+			{
+				previous_block == nullptr
+				? *get_first_block_address_address() = target_to_dealloc
+				: *reinterpret_cast<void**>(reinterpret_cast<size_t*>(previous_block) + 1) = target_to_dealloc;
+
+				auto* block_to_deallocate_size = reinterpret_cast<size_t*>(target_to_dealloc);
+				*block_to_deallocate_size -= sizeof(void*);
+
+				*reinterpret_cast<void**>(block_to_deallocate_size + 1) = current_block;
+				break;
+			}
+			previous_block = current_block;
+			current_block = get_available_next_block_address(current_block);
+		}
+		if (current_block == nullptr)
+		{
+			*reinterpret_cast<void**>(reinterpret_cast<size_t*>(previous_block) + 1) = target_to_dealloc;
+			auto* block_to_deallocate_size = reinterpret_cast<size_t*>(target_to_dealloc);
+			*block_to_deallocate_size -= sizeof(void*);
+
+			*reinterpret_cast<void**>(block_to_deallocate_size + 1) = nullptr;
+		}
 	}
 };
 
