@@ -161,7 +161,7 @@ public:
 
 	void* allocate(size_t requested_size) const override
 	{
-		if (requested_size < sizeof(void*))
+		if (requested_size < sizeof(void*)) // cause after deallocate block has (size_t, void*)
 			requested_size = sizeof(void*);
 
 		void* previous_block = nullptr;
@@ -176,7 +176,7 @@ public:
 			auto current_block_size = get_block_size(current_block);
 			auto* next_block = get_available_next_block_address(current_block);
 
-			if (current_block_size - get_available_block_service_size() >=
+			if (current_block_size + get_available_block_service_size() >=
 				requested_size + get_occupied_block_service_size())
 			{
 				if (alloc_method == first ||
@@ -199,20 +199,23 @@ public:
 
 		if (target_block == nullptr)
 		{
-			throw std::runtime_error("No available memory");
+			this->log("Not available memory", logger::severity::error);
+			throw std::bad_alloc();
 		}
 
+		bool is_requested_size_overridden = false;
+		// increased to the next block, cause can`t split
 		if (get_block_size(target_block) - get_occupied_block_service_size() - requested_size <
 			get_available_block_service_size())
 		{
-			auto requested_size_overriden = get_block_size(target_block) - get_occupied_block_service_size() -
-											get_available_block_service_size();
-			requested_size = requested_size_overriden;
+			requested_size = get_block_size(target_block) - get_occupied_block_service_size() -
+							 get_available_block_service_size();
+			is_requested_size_overridden = true;
 		}
 
 		void* update_next_block_to_previous;
 
-		if (requested_size == get_block_size(target_block) - get_occupied_block_service_size())
+		if (is_requested_size_overridden)
 		{
 			update_next_block_to_previous = next_to_target_block;
 		}
@@ -237,35 +240,21 @@ public:
 		auto* target_block_size_address = reinterpret_cast<size_t*>(target_block);
 		*target_block_size_address = requested_size;
 
+		if (this->has_logger())
+		{
+			char* ptr = reinterpret_cast<char*>(target_block_size_address + 1);
+			std::stringstream log_stream;
+			if (alloc_method == first)
+				log_stream << "Allocated [FIRST] [ " << ptr - m_data << " ] ";
+			else if (alloc_method == best)
+				log_stream << "Allocated [BEST] [ " << ptr - m_data << " ] ";
+			else
+				log_stream << "Allocated [WORST] [ " << ptr - m_data << " ] ";
+			this->log(log_stream.str(), logger::severity::information);
+		}
+
 		return reinterpret_cast<void*>(target_block_size_address + 1);
 	}
-
-//	void* allocate(size_t target_size) const
-//	{
-//		allocation_method m_method = *reinterpret_cast<allocation_method*>(m_data);
-//		void* ptr;
-//		if (m_method == first)
-//			ptr = first_fit(target_size);
-//		else if (m_method == best)
-//			ptr = best_fit(target_size);
-//		else
-//			ptr = worst_fit(target_size);
-//
-//		if (this->has_logger())
-//		{
-//			std::stringstream log_stream;
-//			if (ptr == nullptr)
-//				log_stream << "Not enough memory";
-//			else if (m_method == first)
-//				log_stream << "Allocated [ FIRST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
-//			else if (m_method == best)
-//				log_stream << "Allocated [ BEST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
-//			else
-//				log_stream << "Allocated [ WORST FIT ] [ " << reinterpret_cast<char*>(ptr) - m_data << " ] ";
-//			log(log_stream.str(), logger::severity::information);
-//		}
-//		return ptr;
-//	}
 
 	void deallocate(void* target_to_dealloc) const override
 	{
@@ -283,7 +272,7 @@ public:
 			{
 				log_stream << static_cast<unsigned short>(byte_ptr[i]) << " ";
 			}
-			log(log_stream.str(), logger::severity::information);
+			this->log(log_stream.str(), logger::severity::information);
 		}
 
 		void* previous_block = nullptr;
