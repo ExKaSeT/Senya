@@ -13,19 +13,23 @@ int main()
 			->construct();
 
 	int numCount = 30;
-	memory_3 memory3(150 * sizeof(int), memory_3::allocation_method::worst, nullptr, logger);
+	memory_3 memory3(150 * sizeof(int), memory_3::allocation_method::first, nullptr, logger);
 
 	// Создание генератора случайных чисел
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> dist(1, 100);
 
+while (true)
+{
 	// Создание и заполнение map с рандомными числами и их адресами
 	std::map<int, void*> numberMemoryMap;
 	for (int i = 0; i <= numCount; ++i)
 	{
 		int randomNumber = dist(gen);
 
+		if (numberMemoryMap.find(randomNumber) != numberMemoryMap.end())
+			continue;
 		// Выделение памяти и сохранение адреса
 		void* allocatedMemory = memory3.allocate(sizeof(int));
 		if (allocatedMemory == nullptr)
@@ -68,6 +72,7 @@ int main()
 			numberMemoryMap.erase(it);
 		}
 	}
+}
 
 
 	delete logger;
