@@ -18,11 +18,11 @@ public:
 
 private:
 	// method | alloc_ptr | logger_ptr | first_available_ptr
-	char* m_data;
+	char* data;
 
 	bool has_logger() const
 	{
-		char* current = m_data;
+		char* current = data;
 		current += (sizeof(allocation_method) + sizeof(memory*));
 		logger* log_ = *reinterpret_cast<logger**>(current);
 		return log_ != nullptr;
@@ -30,7 +30,7 @@ private:
 
 	void log(std::string const& str, logger::severity severity) const
 	{
-		char* current = m_data;
+		char* current = data;
 		current += (sizeof(allocation_method) + sizeof(memory*));
 		logger* log_ = *reinterpret_cast<logger**>(current);
 		if (log_ == nullptr)
@@ -45,12 +45,12 @@ private:
 
 	allocation_method get_alloc_method() const
 	{
-		return *reinterpret_cast<allocation_method*>(m_data);
+		return *reinterpret_cast<allocation_method*>(data);
 	}
 
 	void** get_first_block_address_address() const
 	{
-		return reinterpret_cast<void**>(m_data + sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
+		return reinterpret_cast<void**>(data + sizeof(allocation_method) + sizeof(memory*) + sizeof(logger*));
 	}
 
 	void* get_first_block_address() const
@@ -94,7 +94,7 @@ public:
 		{
 			try
 			{
-				m_data = reinterpret_cast<char*>(::operator new(data_size));
+				data = reinterpret_cast<char*>(::operator new(data_size));
 			}
 			catch (...)
 			{
@@ -103,22 +103,22 @@ public:
 			}
 		}
 		else
-			m_data = reinterpret_cast<char*>(alloc->allocate(data_size));
+			data = reinterpret_cast<char*>(alloc->allocate(data_size));
 
-		if (m_data == nullptr)
+		if (data == nullptr)
 		{
 			this->log("Alloc error", logger::severity::error);
 			throw std::bad_alloc();
 		}
 
-		char* current = m_data;
+		char* current = data;
 
-		auto* m_method = reinterpret_cast<allocation_method*>(current);
-		*m_method = method;
+		auto* alloc_method = reinterpret_cast<allocation_method*>(current);
+		*alloc_method = method;
 		current += sizeof(allocation_method);
 
-		auto** m_alloc = reinterpret_cast<memory**>(current);
-		*m_alloc = alloc;
+		auto** alloc_ptr = reinterpret_cast<memory**>(current);
+		*alloc_ptr = alloc;
 		current += sizeof(memory*);
 
 		auto** log_ = reinterpret_cast<logger**>(current);
@@ -132,8 +132,8 @@ public:
 		size_t free_size;
 		free_size = data_size - get_service_block_size();
 
-		auto* b_size = reinterpret_cast<size_t*>(current);
-		*b_size = free_size - (sizeof(size_t) + sizeof(void*));
+		auto* block_size = reinterpret_cast<size_t*>(current);
+		*block_size = free_size - (sizeof(size_t) + sizeof(void*));
 		current += sizeof(size_t);
 
 		auto** next_ptr = reinterpret_cast<void**>(current);
@@ -143,25 +143,25 @@ public:
 		{
 			current += sizeof(size_t);
 			std::stringstream log_stream;
-			log_stream << "Allocated " << *b_size << " bytes [ " << current - m_data << " ] ";
+			log_stream << "Allocated " << *block_size << " bytes [ " << current - data << " ] ";
 			this->log(log_stream.str(), logger::severity::information);
 		}
 	}
 
 	~memory_3() override
 	{
-		char* current = m_data;
+		char* current = data;
 		current += sizeof(allocation_method);
-		memory* m_alloc = *reinterpret_cast<memory**>(current);
-		if (m_alloc == nullptr)
-			::operator delete(m_data);
+		memory* alloc = *reinterpret_cast<memory**>(current);
+		if (alloc == nullptr)
+			::operator delete(data);
 		else
-			m_alloc->deallocate(m_data);
+			alloc->deallocate(data);
 	}
 
 	void* allocate(size_t requested_size) const override
 	{
-		if (requested_size < sizeof(void*)) // cause after deallocate block has (size_t, void*)
+		if (requested_size < sizeof(void*)) // because after deallocate block has (size_t, void*)
 			requested_size = sizeof(void*);
 
 		void* previous_block = nullptr;
@@ -204,10 +204,10 @@ public:
 		}
 
 		bool is_requested_size_overridden = false;
-		// increased to the next block, cause can`t split
 		if (get_block_size(target_block) - get_occupied_block_service_size() - requested_size <
 			get_available_block_service_size())
 		{
+			// increased to the next block, because can`t split
 			requested_size = get_block_size(target_block) - get_occupied_block_service_size() -
 							 get_available_block_service_size();
 			is_requested_size_overridden = true;
@@ -222,7 +222,7 @@ public:
 		else
 		{
 			update_next_block_to_previous = reinterpret_cast<void*>
-			(reinterpret_cast<unsigned char*>(target_block) + get_occupied_block_service_size() + requested_size);
+			(reinterpret_cast<char*>(target_block) + get_occupied_block_service_size() + requested_size);
 
 			auto* target_block_leftover_size = reinterpret_cast<size_t*>(update_next_block_to_previous);
 			*target_block_leftover_size =
@@ -235,7 +235,7 @@ public:
 		previous_to_target_block == nullptr
 		? *get_first_block_address_address() = update_next_block_to_previous
 		: *reinterpret_cast<void**>
-		(reinterpret_cast<unsigned char*>(previous_to_target_block) + sizeof(size_t)) = update_next_block_to_previous;
+		(reinterpret_cast<char*>(previous_to_target_block) + sizeof(size_t)) = update_next_block_to_previous;
 
 		auto* target_block_size_address = reinterpret_cast<size_t*>(target_block);
 		*target_block_size_address = requested_size;
@@ -245,11 +245,11 @@ public:
 			char* ptr = reinterpret_cast<char*>(target_block_size_address + 1);
 			std::stringstream log_stream;
 			if (alloc_method == first)
-				log_stream << "Allocated [FIRST] [ " << ptr - m_data << " ] ";
+				log_stream << "Allocated [FIRST] [ " << ptr - data << " ] ";
 			else if (alloc_method == best)
-				log_stream << "Allocated [BEST] [ " << ptr - m_data << " ] ";
+				log_stream << "Allocated [BEST] [ " << ptr - data << " ] ";
 			else
-				log_stream << "Allocated [WORST] [ " << ptr - m_data << " ] ";
+				log_stream << "Allocated [WORST] [ " << ptr - data << " ] ";
 			this->log(log_stream.str(), logger::severity::information);
 		}
 
@@ -266,7 +266,7 @@ public:
 			size_t block_size = *reinterpret_cast<size_t*>(target_to_dealloc);
 			std::stringstream log_stream;
 			char* block_data = reinterpret_cast<char*>(target_to_dealloc) + sizeof(size_t);
-			log_stream << "Deallocated [ " << block_data - m_data << " ]: ";
+			log_stream << "Deallocated [ " << block_data - data << " ]: ";
 			auto* byte_ptr = reinterpret_cast<unsigned char*>(block_data);
 			for (auto i = 0; i < block_size; i++)
 			{
