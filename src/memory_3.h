@@ -133,7 +133,7 @@ public:
 		free_size = data_size - get_service_block_size();
 
 		auto* block_size = reinterpret_cast<size_t*>(current);
-		*block_size = free_size - (sizeof(size_t) + sizeof(void*));
+		*block_size = free_size - get_available_block_service_size();
 		current += sizeof(size_t);
 
 		auto** next_ptr = reinterpret_cast<void**>(current);
@@ -208,8 +208,7 @@ public:
 			get_available_block_service_size())
 		{
 			// increased to the next block, because can`t split
-			requested_size = get_block_size(target_block) - get_occupied_block_service_size() -
-							 get_available_block_service_size();
+			requested_size = get_block_size(target_block);
 			is_requested_size_overridden = true;
 		}
 
@@ -267,7 +266,7 @@ public:
 			std::stringstream log_stream;
 			char* block_data = reinterpret_cast<char*>(target_to_dealloc) + sizeof(size_t);
 			log_stream << "Deallocated [ " << block_data - data << " ]: ";
-			auto* byte_ptr = reinterpret_cast<unsigned char*>(block_data);
+			auto* byte_ptr = reinterpret_cast<char*>(block_data);
 			for (auto i = 0; i < block_size; i++)
 			{
 				log_stream << static_cast<unsigned short>(byte_ptr[i]) << " ";
