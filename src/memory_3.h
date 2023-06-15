@@ -304,13 +304,34 @@ public:
 			previous_block = current_block;
 			current_block = get_available_next_block_address(current_block);
 		}
-		if (current_block == nullptr)
+		if (current_block == nullptr) // target is last free block
 		{
 			*reinterpret_cast<void**>(reinterpret_cast<size_t*>(previous_block) + 1) = target_to_dealloc;
 			auto* block_to_deallocate_size = reinterpret_cast<size_t*>(target_to_dealloc);
 			*block_to_deallocate_size -= sizeof(void*);
 
 			*reinterpret_cast<void**>(block_to_deallocate_size + 1) = nullptr;
+		}
+		else if (reinterpret_cast<char*>(target_to_dealloc) + get_available_block_service_size() +
+				 get_block_size(target_to_dealloc) == current_block)
+		{
+			void* next_block = get_available_next_block_address(current_block);
+			auto* target_size = reinterpret_cast<size_t*>(target_to_dealloc);
+			*target_size = get_block_size(target_to_dealloc) + get_block_size(current_block) +
+						   get_available_block_service_size();
+			auto** next_ptr = reinterpret_cast<void**>(target_size + 1);
+			*next_ptr = next_block;
+		}
+		if (previous_block != nullptr &&
+			reinterpret_cast<char*>(previous_block) + get_available_block_service_size() +
+			get_block_size(previous_block) == target_to_dealloc)
+		{
+			void* next_block = get_available_next_block_address(target_to_dealloc);
+			auto* prev_block_size = reinterpret_cast<size_t*>(previous_block);
+			*prev_block_size = get_block_size(previous_block) + get_block_size(target_to_dealloc) +
+							   get_available_block_service_size();
+			auto** prev_next_ptr = reinterpret_cast<void**>(prev_block_size + 1);
+			*prev_next_ptr = next_block;
 		}
 	}
 };
