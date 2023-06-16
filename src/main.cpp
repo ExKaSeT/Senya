@@ -2,7 +2,8 @@
 #include <algorithm>
 #include "logger/logger.h"
 #include "logger/logger_builder_concrete.h"
-#include "memory_3.h"
+#include "memory_5.h"
+
 
 int main()
 {
@@ -13,7 +14,8 @@ int main()
 			->construct();
 
 	int numCount = 30;
-	memory_3 memory3(150 * sizeof(int), memory_3::allocation_method::first, nullptr, logger);
+
+	memory_5 memory5(1000 * sizeof(int), nullptr, logger);
 
 	// Создание генератора случайных чисел
 	std::random_device rd;
@@ -28,10 +30,12 @@ while (true)
 	{
 		int randomNumber = dist(gen);
 
-		if (numberMemoryMap.find(randomNumber) != numberMemoryMap.end())
-			continue;
+		while (numberMemoryMap.find(randomNumber) != numberMemoryMap.end())
+		{
+			randomNumber = dist(gen);
+		}
 		// Выделение памяти и сохранение адреса
-		void* allocatedMemory = memory3.allocate(sizeof(int));
+		void* allocatedMemory = memory5.allocate(sizeof(int));
 		if (allocatedMemory == nullptr)
 			throw std::runtime_error("Not enough mem in alloc");
 		int* memoryInteger = reinterpret_cast<int*>(allocatedMemory);
@@ -68,7 +72,7 @@ while (true)
 			std::cout << "DELETE: " << it->first << std::endl;
 
 			// Освобождение памяти
-			memory3.deallocate(memoryAddress);
+			memory5.deallocate(memoryAddress);
 			numberMemoryMap.erase(it);
 		}
 	}
