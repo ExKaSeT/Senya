@@ -1,5 +1,5 @@
-#ifndef MAIN_C_SRC_MEMORY_4_H
-#define MAIN_C_SRC_MEMORY_4_H
+#ifndef MAIN_C_SRC_MEMORY_5_H
+#define MAIN_C_SRC_MEMORY_5_H
 
 
 #include <sstream>
@@ -356,4 +356,4 @@ public:
 };
 
 
-#endif //MAIN_C_SRC_MEMORY_4_H
+#endif //MAIN_C_SRC_MEMORY_5_H
