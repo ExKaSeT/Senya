@@ -303,13 +303,13 @@ public:
 		maxKeysCount = other.maxKeysCount;
 		minChildCount = other.minChildCount;
 		minKeysCount = other.minKeysCount;
-		alloc = other.alloc;
 		compare = other.compare;
 		size_ = other.size_;
 		depth_ = other.depth_;
 		storedInHeap = other.storedInHeap;
 		if (root != nullptr)
 			destroyTree(root);
+		alloc = other.alloc;
 		root = copyTree(other.root);
 		return *this;
 	}
