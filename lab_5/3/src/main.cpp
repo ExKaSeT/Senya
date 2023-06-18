@@ -18,7 +18,7 @@ int main()
 
 	logger_builder* builder2 = new logger_builder_concrete();
 	logger* logger1 = builder2
-			->add_stream("console", logger::severity::trace)
+			->add_stream("log1.txt", logger::severity::trace)
 			->construct();
 
 	logger_builder* builder3 = new logger_builder_concrete();
@@ -26,9 +26,11 @@ int main()
 			->add_stream("log2.txt", logger::severity::trace)
 			->construct();
 
-	memory *allocator1 = new memory_5(100000000, nullptr, logger0);
+	memory *allocator1 = new memory_5(1000000, nullptr, logger0);
 	memory *allocator2 = new memory_3(1000000, memory_3::allocation_method::first, nullptr, logger1);
-	memory *allocator3 = new memory_4(99990, memory_4::allocation_method::best, nullptr, logger2);
+	memory *allocator3 = new memory_4(99990, memory_4::allocation_method::worst, nullptr, logger2);
+
+	memory *alc_to_test = allocator1;
 
 	std::list<void*> allocated_blocks;
 
@@ -42,13 +44,13 @@ int main()
 		switch (rand() % 3)
 		{
 		case 0:
-			alc = allocator2;
+			alc = alc_to_test;
 			break;
 		case 1:
-			alc = allocator2;
+			alc = alc_to_test;
 			break;
 		case 2:
-			alc = allocator2;
+			alc = alc_to_test;
 			break;
 		}
 
@@ -94,13 +96,13 @@ int main()
 		switch (rand() % 3)
 		{
 		case 0:
-			alc = allocator2;
+			alc = alc_to_test;
 			break;
 		case 1:
-			alc = allocator2;
+			alc = alc_to_test;
 			break;
 		case 2:
-			alc = allocator2;
+			alc = alc_to_test;
 			break;
 		}
 
@@ -115,10 +117,4 @@ int main()
 			std::cout << ex.what() << std::endl;
 		}
 	}
-
-	delete allocator3;
-	delete allocator2;
-	delete allocator1;
-	delete logger0;
-	delete builder1;
 }
