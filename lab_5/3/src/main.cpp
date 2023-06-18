@@ -1,82 +1,124 @@
 #include <random>
 #include <algorithm>
+#include <list>
 #include "logger/logger.h"
 #include "logger/logger_builder_concrete.h"
 #include "memory_3.h"
+#include "memory_4.h"
+#include "memory_5.h"
+
 
 int main()
 {
-	logger_builder* builder = new logger_builder_concrete();
+	logger_builder* builder1 = new logger_builder_concrete();
 
-	logger* logger = builder
+	logger* logger0 = builder1
+			->add_stream("log.txt", logger::severity::trace)
+			->construct();
+
+	logger_builder* builder2 = new logger_builder_concrete();
+	logger* logger1 = builder2
 			->add_stream("console", logger::severity::trace)
 			->construct();
 
-	int numCount = 30;
-	memory_3 memory3(150 * sizeof(int), memory_3::allocation_method::first, nullptr, logger);
+	logger_builder* builder3 = new logger_builder_concrete();
+	logger* logger2 = builder3
+			->add_stream("log2.txt", logger::severity::trace)
+			->construct();
 
-	// Создание генератора случайных чисел
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 100);
+	memory *allocator1 = new memory_5(100000000, nullptr, logger0);
+	memory *allocator2 = new memory_3(1000000, memory_3::allocation_method::first, nullptr, logger1);
+	memory *allocator3 = new memory_4(99990, memory_4::allocation_method::best, nullptr, logger2);
 
-while (true)
-{
-	// Создание и заполнение map с рандомными числами и их адресами
-	std::map<int, void*> numberMemoryMap;
-	for (int i = 0; i <= numCount; ++i)
+	std::list<void*> allocated_blocks;
+
+	srand((unsigned)time(nullptr));
+	memory *alc = nullptr;
+
+	for (size_t i = 0; i < 20000; ++i)
 	{
-		int randomNumber = dist(gen);
+		void * ptr;
 
-		if (numberMemoryMap.find(randomNumber) != numberMemoryMap.end())
-			continue;
-		// Выделение памяти и сохранение адреса
-		void* allocatedMemory = memory3.allocate(sizeof(int));
-		if (allocatedMemory == nullptr)
-			throw std::runtime_error("Not enough mem in alloc");
-		int* memoryInteger = reinterpret_cast<int*>(allocatedMemory);
-		*memoryInteger = randomNumber;
-		numberMemoryMap[randomNumber] = allocatedMemory;
-	}
-
-	// Перемешивание порядка освобождения чисел
-	std::vector<int> numbers;
-	for (const auto& pair : numberMemoryMap)
-	{
-		numbers.push_back(pair.first);
-	}
-	std::shuffle(numbers.begin(), numbers.end(), gen);
-
-	// Освобождение чисел в рандомном порядке и проверка валидности
-	for (int number : numbers)
-	{
-		auto it = numberMemoryMap.find(number);
-		if (it != numberMemoryMap.end())
+		switch (rand() % 3)
 		{
-			void* memoryAddress = it->second;
+		case 0:
+			alc = allocator2;
+			break;
+		case 1:
+			alc = allocator2;
+			break;
+		case 2:
+			alc = allocator2;
+			break;
+		}
 
-			for (auto & it : numberMemoryMap)
+		switch (rand() % 2)
+		{
+		case 0:
+			try
 			{
-				void* memoryAddress = it.second;
-				int* memoryInteger = reinterpret_cast<int*>(memoryAddress);
-				if (it.first != *memoryInteger)
-				{
-					throw std::runtime_error("Invalid");
-				}
+				ptr = reinterpret_cast<void *>(alc->allocate(rand() % 81 + 20)); // разность макс и мин с включенными границами + минимальное
+				allocated_blocks.push_back(ptr);
+			}
+			catch (std::exception const &ex)
+			{
+				std::cout << ex.what() << std::endl;
+			}
+			break;
+		case 1:
+
+			if (allocated_blocks.empty())
+			{
+				break;
 			}
 
-			std::cout << "DELETE: " << it->first << std::endl;
+			try
+			{
+				auto iter = allocated_blocks.begin();
+				std::advance(iter, rand() % allocated_blocks.size());
+				alc->deallocate(*iter);
+				allocated_blocks.erase(iter);
+			}
+			catch (std::exception const &ex)
+			{
+				std::cout << ex.what() << std::endl;
+			}
+			break;
+		}
 
-			// Освобождение памяти
-			memory3.deallocate(memoryAddress);
-			numberMemoryMap.erase(it);
+		//std::cout << "iter # " << i + 1 << " finish" << std::endl;
+	}
+
+	while (!allocated_blocks.empty())
+	{
+		switch (rand() % 3)
+		{
+		case 0:
+			alc = allocator2;
+			break;
+		case 1:
+			alc = allocator2;
+			break;
+		case 2:
+			alc = allocator2;
+			break;
+		}
+
+		try
+		{
+			auto iter = allocated_blocks.begin();
+			alc->deallocate(*iter);
+			allocated_blocks.erase(iter);
+		}
+		catch (std::exception const &ex)
+		{
+			std::cout << ex.what() << std::endl;
 		}
 	}
-}
 
-
-	delete logger;
-	delete builder;
-
-	return 0;
+	delete allocator3;
+	delete allocator2;
+	delete allocator1;
+	delete logger0;
+	delete builder1;
 }

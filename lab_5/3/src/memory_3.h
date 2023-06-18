@@ -19,7 +19,7 @@ public:
 private:
 	// available block: size_t | next_ptr
 	// occupied block: size_t
-	
+
 	// data: method | alloc_ptr | logger_ptr | first_available_ptr | ...
 	char* data;
 
@@ -207,8 +207,8 @@ public:
 		}
 
 		bool is_requested_size_overridden = false;
-		if (get_block_size(target_block) - get_occupied_block_service_size() - requested_size <
-			get_available_block_service_size())
+		if (get_block_size(target_block) + get_available_block_service_size() - get_occupied_block_service_size() -
+			requested_size < get_available_block_service_size())
 		{
 			// increased to the next block, because can`t split
 			requested_size = get_block_size(target_block);
